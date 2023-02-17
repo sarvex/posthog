@@ -1,0 +1,11 @@
+.LemonCollapse {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.LemonCollapsePanel {
+    width: 100%;
+    &:not(:last-child) {
+        border-bottom: 1px solid var(--border);
+    }
+}

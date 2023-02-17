@@ -1133,7 +1133,7 @@ export interface PlanInterface {
 }
 
 // Creating a nominal type: https://github.com/microsoft/TypeScript/issues/202#issuecomment-961853101
-export type InsightShortId = string & { readonly '': unique symbol }
+export type InsightShortId = string & { readonly __brand: unique symbol }
 
 export enum InsightColor {
     White = 'white',
