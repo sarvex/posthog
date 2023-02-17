@@ -1,5 +1,6 @@
 import contextlib
 import datetime as dt
+from threading import Thread
 from uuid import uuid4
 from django.db.utils import ConnectionHandler
 
@@ -14,6 +15,7 @@ from posthog.test.base import BaseTest
 
 
 from django.db.utils import DEFAULT_DB_ALIAS, load_backend
+from django.test.utils import CaptureQueriesContext
 
         PersonOverride.objects.all().delete()
         PersonOverrideHelper.objects.all().delete()
@@ -305,7 +307,7 @@ def test_person_override_allows_override_person_id_as_old_person_id_in_different
 
 
 @pytest.mark.django_db(transaction=True)
-def test_person_override_disallows_old_person_id_as_override_person_id():
+def test_person_override_disallows_old_person_id_as_override_person_id_race_conditions():
     """Test a new override_person_id cannot match an existing old_person_id.
 
     We re-use the old_person_id from the first model created as the override_person_id
@@ -332,18 +334,15 @@ def test_person_override_disallows_old_person_id_as_override_person_id():
     Person.objects.create(uuid=override_person_id, team=team)
     Person.objects.create(uuid=new_override_person_id, team=team)
 
-    with create_connection() as first_connection, first_connection.cursor() as first_cursor, create_connection() as second_connection, second_connection.cursor() as second_cursor:
-        first_cursor.execute("BEGIN; SET lock_timeout TO '1s';")
-        second_cursor.execute("BEGIN; SET lock_timeout TO '1s'; ")
+    with create_connection() as first_cursor, create_connection() as second_cursor:
+        first_cursor.execute("BEGIN")
+        second_cursor.execute("BEGIN")
 
-        first_cursor.execute(
-            """
-                INSERT INTO posthog_personoverride
-                (team_id, old_person_id, override_person_id, oldest_event, version)
-                VALUES
-                (%s, %s, %s, %s, %s)
-            """,
-            [team.pk, old_person_id, override_person_id, oldest_event, 1],
+        _merge_people(team, first_cursor, old_person_id, override_person_id, oldest_event)
+
+        second_merge_thread = Thread(
+            target=_merge_people_and_commit,
+            args=(team, second_cursor, override_person_id, new_override_person_id, oldest_event),
         )
 
         assert p1.override_person_id.uuid == p2.old_person_id.uuid
@@ -370,11 +369,28 @@ def test_person_override_disallows_old_person_id_as_override_person_id():
         first_cursor.execute("COMMIT")
 
         with pytest.raises(IntegrityError):
-            second_cursor.execute("COMMIT")
+            first_cursor.execute("COMMIT")
 
-    assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id")) == [
-        (old_person_id, new_override_person_id),
-    ]  # type: ignore
+        second_merge_thread.join()
+
+        assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id")) == [
+            (override_person_id, new_override_person_id),
+        ]  # type: ignore
+
+        # We got an IntegrityError, so the first transaction was rolled back. We'll
+        # need to try this transaction again to get to the state we expect.
+        first_cursor.execute("BEGIN")
+        _merge_people(team, first_cursor, old_person_id, override_person_id, oldest_event)
+        first_cursor.execute("COMMIT")
+
+        mappings = list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id"))
+
+        assert sorted(mappings) == sorted(
+            [
+                (override_person_id, new_override_person_id),
+                (old_person_id, new_override_person_id),
+            ]
+        ), f"{mappings=} {old_person_id=}, {override_person_id=}, {new_override_person_id=}"  # type: ignore
 
 
 def test_person_override_old_person_id_as_override_person_id_in_different_teams():
