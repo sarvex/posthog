@@ -15,6 +15,7 @@ from posthog.models.session_recording.metadata import (
     SnapshotDataTaggedWithWindowId,
     WindowId,
 )
+from posthog.redis import get_client
 from posthog.session_recordings.session_recording_helpers import (
     decompress_chunked_snapshot_data,
     generate_inactive_segments_for_range,
@@ -22,6 +23,12 @@ from posthog.session_recordings.session_recording_helpers import (
     parse_snapshot_timestamp,
 )
 from posthog.utils import flatten
+
+RECORDINGS_DATA_KEY = "@posthog/recordings/"
+
+
+def get_key(team_id: int, session_id: str):
+    return f"{RECORDINGS_DATA_KEY}{team_id}/{session_id}"
 
 
 class SessionRecordingEvents:
@@ -60,6 +67,10 @@ class SessionRecordingEvents:
         return ("", {})
 
     def _query_recording_snapshots(self, include_snapshots=False) -> List[SessionRecordingEvent]:
+        redis_results = self._query_recording_snapshots_redis()
+        if redis_results:
+            return redis_results
+
         fields = ["session_id", "window_id", "distinct_id", "timestamp", "events_summary"]
         if include_snapshots:
             fields.append("snapshot_data")
@@ -83,16 +94,47 @@ class SessionRecordingEvents:
             for columns in response
         ]
 
-    # Fast constant time query that checks if session exists.
-    def query_session_exists(self) -> bool:
-        date_clause, date_clause_params = self.get_recording_snapshot_date_clause()
-        query = self._recording_snapshot_query.format(
-            date_clause=date_clause, fields="session_id", limit_param="LIMIT 1"
-        )
-        response = sync_execute(
-            query, {"team_id": self._team.id, "session_id": self._session_recording_id, **date_clause_params}
-        )
-        return bool(response)
+    def _query_recording_snapshots_redis(self):
+        key = get_key(self._team.id, self._session_recording_id)
+        snapshots = get_client().lrange(key, 0, -1)
+
+        items = sorted([json.loads(x) for x in snapshots], key=lambda x: x["snapshot"]["timestamp"])
+
+        return [
+            SessionRecordingEvent(
+                session_id=self._session_recording_id,
+                window_id=item["window_id"],
+                distinct_id=item.get("distinct_id", "unknown"),
+                timestamp=item["snapshot"].get("timestamp"),
+                events_summary=[],
+                snapshot_data=item["snapshot"],
+            )
+            for item in items
+        ]
+
+    # Ingestion write directly to Redis as a sort of hot-cache. Until the recording is "finished" it will remain here
+    @staticmethod
+    def ingest(team_id: int, events: dict) -> None:
+        # NOTE: WE shouldn't use the global redis client here but for local PoC its fine
+        pipe = get_client().pipeline()
+
+        for event in events:
+            if event["event"] == "$snapshot":
+                session_id = event["properties"][""]
+                session_id = event["properties"]["$session_id"]
+                window_id = event["properties"].get("$window_id")
+                snapshot_data = event["properties"]["$snapshot_data"]
+
+                # NOTE: Do we need distinctId here?
+                payload = {
+                    "window_id": window_id,
+                    "snapshot": snapshot_data,
+                }
+
+                key = get_key(team_id, session_id)
+                pipe.lpush(key, json.dumps(payload))
+
+        pipe.execute()
 
     def get_snapshots(self, limit, offset) -> Optional[DecompressedRecordingData]:
         all_snapshots = [

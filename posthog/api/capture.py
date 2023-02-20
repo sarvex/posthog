@@ -34,6 +34,7 @@ from posthog.logging.timing import timed
 from posthog.metrics import LABEL_RESOURCE_TYPE, LABEL_TEAM_ID
 from posthog.models.feature_flag import get_all_feature_flags
 from posthog.models.utils import UUIDT
+from posthog.queries.session_recordings.session_recording_events import SessionRecordingEvents
 from posthog.session_recordings.session_recording_helpers import preprocess_session_recording_events_for_clickhouse
 from posthog.utils import cors_response, get_ip_address
 
@@ -331,7 +332,11 @@ def get_event(request):
             capture_exception(e)
 
         try:
+            # TODO: What do if team_id is None?
+            if team_id:
+                SessionRecordingEvents.ingest(team_id, events)
             events = preprocess_session_recording_events_for_clickhouse(events)
+
         except ValueError as e:
             return cors_response(
                 request, generate_exception_response("capture", f"Invalid payload: {e}", code="invalid_payload")
