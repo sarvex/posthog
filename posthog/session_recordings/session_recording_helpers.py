@@ -6,10 +6,7 @@ from typing import Any, DefaultDict, Dict, Generator, List, Optional
 from sentry_sdk.api import capture_exception, capture_message
 
 from posthog.models import utils
-from posthog.models.session_recording.metadata import (
-    RecordingSnapshotsData,
-    SnapshotDataTaggedWithWindowId,
-)
+from posthog.models.session_recording.metadata import RecordingSnapshotsData, SnapshotDataTaggedWithWindowId
 from posthog.session_recordings.session_recording_data import (
     RRWEB_MAP_EVENT_TYPE,
     compress_to_string,
@@ -17,11 +14,10 @@ from posthog.session_recordings.session_recording_data import (
     get_events_summary_from_snapshot_data,
 )
 
-
 Event = Dict[str, Any]
 
 
-### Session Recording Clickhouse helpers
+# Session Recording Clickhouse helpers
 # Due to the way we store items in Kafka/Clickhouse, we need to compress and chunk the session recording data before sending it to Kafka.
 
 

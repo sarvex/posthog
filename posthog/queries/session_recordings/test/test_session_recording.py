@@ -16,8 +16,8 @@ from posthog.models.team import Team
 from posthog.queries.session_recordings.session_recording_events import RecordingMetadata, SessionRecordingEvents
 from posthog.session_recordings.session_recording_helpers import (
     ACTIVITY_THRESHOLD_SECONDS,
-    RecordingSnapshotsData,
     RecordingSegment,
+    RecordingSnapshotsData,
 )
 from posthog.session_recordings.test.test_factory import create_chunked_snapshots, create_snapshot
 from posthog.test.base import APIBaseTest, ClickhouseTestMixin

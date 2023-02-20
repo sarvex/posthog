@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 from django.db import models
 from django.db.models import Count
@@ -7,11 +7,7 @@ from django.dispatch import receiver
 from posthog import settings
 from posthog.celery import ee_persist_single_recording
 from posthog.models.person.person import Person
-from posthog.models.session_recording.metadata import (
-    RecordingSnapshotsData,
-    RecordingMatchingEvents,
-    RecordingMetadata,
-)
+from posthog.models.session_recording.metadata import RecordingMatchingEvents, RecordingMetadata, RecordingSnapshotsData
 from posthog.models.session_recording_event.session_recording_event import SessionRecordingViewed
 from posthog.models.team.team import Team
 from posthog.models.utils import UUIDModel
@@ -49,6 +45,7 @@ class SessionRecording(UUIDModel):
     # Metadata can be loaded from Clickhouse or S3
     _metadata: Optional[RecordingMetadata] = None
     _snapshots: Optional[RecordingSnapshotsData] = None
+    _storage: Optional[str] = None  # "clickhouse" or "object_storage" or "redis" - useful for debugging
 
     def load_metadata(self) -> bool:
         from posthog.queries.session_recordings.session_recording_events import SessionRecordingEvents
@@ -62,26 +59,30 @@ class SessionRecording(UUIDModel):
             if not self._metadata:
                 return False
         else:
-            # Try to load from Clickhouse
-            metadata = SessionRecordingEvents(
-                team=self.team,
-                session_recording_id=self.session_id,
-                recording_start_time=self.start_time,
-            ).get_metadata()
+            self.load_hot_data()
 
-            if not metadata:
-                return False
+            if not self._metadata:
+                # Try to load from Clickhouse
+                metadata = SessionRecordingEvents(
+                    team=self.team,
+                    session_recording_id=self.session_id,
+                    recording_start_time=self.start_time,
+                ).get_metadata()
 
-            self._metadata = metadata
+                if not metadata:
+                    return False
+
+                self._storage = "clickhouse"
+                self._metadata = metadata
 
             # Some fields of the metadata are persisted fully in the model
-            self.distinct_id = metadata["distinct_id"]
-            self.start_time = metadata["start_time"]
-            self.end_time = metadata["end_time"]
-            self.duration = metadata["duration"]
-            self.click_count = metadata["click_count"]
-            self.keypress_count = metadata["keypress_count"]
-            self.set_start_url_from_urls(metadata["urls"])
+            self.distinct_id = self._metadata["distinct_id"]
+            self.start_time = self._metadata["start_time"]
+            self.end_time = self._metadata["end_time"]
+            self.duration = self._metadata["duration"]
+            self.click_count = self._metadata["click_count"]
+            self.keypress_count = self._metadata["keypress_count"]
+            self.set_start_url_from_urls(self._metadata["urls"])
 
         return True
 
@@ -94,11 +95,28 @@ class SessionRecording(UUIDModel):
         if self.object_storage_path:
             self.load_object_data()
         else:
-            snapshots = SessionRecordingEvents(
-                team=self.team, session_recording_id=self.session_id, recording_start_time=self.start_time
-            ).get_snapshots(limit, offset)
+            self.load_hot_data()
 
-            self._snapshots = snapshots
+            if not self._snapshots:
+                # Try to load from Clickhouse
+                snapshots = SessionRecordingEvents(
+                    team=self.team, session_recording_id=self.session_id, recording_start_time=self.start_time
+                ).get_snapshots(limit, offset)
+
+                self._snapshots = snapshots
+                self._storage = "clickhouse"
+
+    def load_hot_data(self) -> None:
+        from posthog.queries.session_recordings.session_recording_events import SessionRecordingEvents
+
+        data = SessionRecordingEvents(team=self.team, session_recording_id=self.session_id).get_all()
+
+        if not data:
+            return
+
+        self._metadata = cast(RecordingMetadata, data)
+        self._snapshots = cast(RecordingSnapshotsData, data)
+        self._storage = "hot_storage"
 
     def load_object_data(self) -> None:
         try:
@@ -122,6 +140,8 @@ class SessionRecording(UUIDModel):
             "snapshot_data_by_window_id": data["snapshot_data_by_window_id"],
         }
 
+        self._storage = "object_storage"
+
     # S3 / Clickhouse backed fields
     @property
     def snapshot_data_by_window_id(self):
@@ -141,7 +161,9 @@ class SessionRecording(UUIDModel):
 
     @property
     def storage(self):
-        return "object_storage" if self.object_storage_path else "clickhouse"
+        if self._storage:
+            return self._storage
+        return "object_storage" if self.object_storage_path else "hot_storage"
 
     def load_person(self) -> Optional[Person]:
         if self.person:

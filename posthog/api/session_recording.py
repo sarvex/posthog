@@ -145,13 +145,9 @@ class SessionRecordingViewSet(StructuredViewSetMixin, viewsets.ViewSet):
             next_url = None
 
         res = {
+            "storage": recording.storage,
             "next": next_url,
             "snapshot_data_by_window_id": recording.snapshot_data_by_window_id,
-            # TODO: Remove this once the frontend is migrated to use the above values
-            "result": {
-                "next": next_url,
-                "snapshot_data_by_window_id": recording.snapshot_data_by_window_id,
-            },
         }
 
         # NOTE: We have seen some issues with encoding of emojis, specifically when there is a lone "surrogate pair". See #13272 for more details

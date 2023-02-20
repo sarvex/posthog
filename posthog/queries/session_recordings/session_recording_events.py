@@ -1,29 +1,24 @@
 import json
+from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
 from statshog.defaults.django import statsd
 
+from posthog import settings
 from posthog.client import sync_execute
 from posthog.models import Team
 from posthog.models.session_recording.metadata import (
-    RecordingSnapshotsData,
     RecordingMetadata,
-    RecordingSegment,
+    RecordingSnapshotsData,
     SessionRecordingEvent,
     SessionRecordingEventSummary,
     SnapshotDataTaggedWithWindowId,
     WindowId,
 )
 from posthog.redis import get_client
-from posthog.session_recordings.session_recording_data import (
-    generate_inactive_segments_for_range,
-    get_active_segments_from_event_list,
-    parse_snapshot_timestamp,
-)
+from posthog.session_recordings.session_recording_data import get_metadata_from_events_summary
 from posthog.session_recordings.session_recording_helpers import decompress_chunked_snapshot_data
-
-from posthog.utils import flatten
 
 RECORDINGS_DATA_KEY = "@posthog/recordings/"
 
@@ -109,36 +104,7 @@ class SessionRecordingEvents:
             for item in items
         ]
 
-    # Ingestion write directly to Redis as a sort of hot-cache. Until the recording is "finished" it will remain here
-    @staticmethod
-    def ingest(team_id: int, events: dict) -> None:
-        # NOTE: WE shouldn't use the global redis client here but for local PoC its fine
-        pipe = get_client().pipeline()
-
-        for event in events:
-            if event["event"] == "$snapshot":
-                distinct_id = event["properties"]["distinct_id"]
-                session_id = event["properties"]["$session_id"]
-                window_id = event["properties"].get("$window_id")
-                snapshot_data = event["properties"]["$snapshot_data"]
-
-                # NOTE: Do we need distinctId here?
-                payload = {
-                    "window_id": window_id,
-                    "distinct_id": distinct_id,
-                    "snapshot": snapshot_data,
-                }
-
-                key = get_key(team_id, session_id)
-                pipe.lpush(key, json.dumps(payload))
-
-        pipe.execute()
-
     def get_snapshots(self, limit, offset) -> Optional[RecordingSnapshotsData]:
-        new_results = self.get_snapshots_redis(limit, offset)
-        if new_results:
-            return new_results
-
         all_snapshots = [
             SnapshotDataTaggedWithWindowId(
                 window_id=recording_snapshot["window_id"], snapshot_data=recording_snapshot["snapshot_data"]
@@ -152,24 +118,8 @@ class SessionRecordingEvents:
         if decompressed["snapshot_data_by_window_id"] == {}:
             return None
 
-        decompressed["source"] = "clickhouse"
+        decompressed["storage"] = "clickhouse"
         return decompressed
-
-    def get_snapshots_redis(self, limit, offset) -> Optional[RecordingSnapshotsData]:
-        res = self._query_recording_snapshots_redis()
-
-        if not res:
-            return None
-
-        snapshot_data_by_window_id = {}
-
-        for item in res:
-            if not snapshot_data_by_window_id.get(item["window_id"]):
-                snapshot_data_by_window_id[item["window_id"]] = []
-
-            snapshot_data_by_window_id[item["window_id"]].append(item["snapshot_data"])
-
-        return {"snapshot_data_by_window_id": snapshot_data_by_window_id, "has_next": False, "source": "redis"}
 
     def get_metadata(self) -> Optional[RecordingMetadata]:
         snapshots = self._query_recording_snapshots(include_snapshots=False)
@@ -184,7 +134,7 @@ class SessionRecordingEvents:
         if events_summary_by_window_id:
             # If all snapshots contain the new events_summary field...
             statsd.incr("session_recordings.metadata_parsed_from_events_summary")
-            metadata = self._get_metadata_from_events_summary(events_summary_by_window_id)
+            metadata = get_metadata_from_events_summary(events_summary_by_window_id)
         else:
             # ... otherwise use the legacy method
             snapshots = self._query_recording_snapshots(include_snapshots=True)
@@ -192,6 +142,7 @@ class SessionRecordingEvents:
             metadata = self._get_metadata_from_snapshot_data(snapshots)
 
         metadata["distinct_id"] = cast(str, distinct_id)
+        metadata["storage"] = "clickhouse"
         return metadata
 
     def _get_events_summary_by_window_id(
@@ -240,115 +191,58 @@ class SessionRecordingEvents:
             for window_id, event_list in decompressed_recording_data["snapshot_data_by_window_id"].items()
         }
 
-        return self._get_metadata_from_events_summary(events_summary_by_window_id)
+        return get_metadata_from_events_summary(events_summary_by_window_id)
 
-    def _get_metadata_from_events_summary(
-        self, events_summary_by_window_id: Dict[WindowId, List[SessionRecordingEventSummary]]
-    ) -> RecordingMetadata:
-        """
-        This function processes the recording events into metadata.
+    def get_all(self) -> Optional[Union[RecordingSnapshotsData, RecordingMetadata]]:
+        # For the new hot storage method, we load all data every time. This may change later but for now it basically bypasses the other options
 
-        A recording can be composed of events from multiple windows/tabs. Recording events are seperated by
-        `window_id`, so the playback experience is consistent (changes in one tab don't impact the recording
-        of a different tab). However, we still want to playback the recording to the end user as the user interacted
-        with their product.
+        # Note we can't do a simple limit offset as the events are currently unordered...
+        snapshots = self._query_recording_snapshots_redis()
 
-        This function creates a "playlist" of recording segments that designates the order in which the front end
-        should flip between players of different windows/tabs. To create this playlist, this function does the following:
+        if not snapshots:
+            return None
 
-        (1) For each recording event, we determine if it is "active" or not. An active event designates user
-        activity (e.g. mouse movement).
+        distinct_id = snapshots[0]["distinct_id"]
+        snapshot_data_by_window_id = defaultdict(list)
 
-        (2) We then generate "active segments" based on these lists of events. Active segments are segments
-        of recordings where the maximum time between events determined to be active is less than a threshold (set to 60 seconds).
+        for item in snapshots:
+            if not snapshot_data_by_window_id.get(item["window_id"]):
+                snapshot_data_by_window_id[item["window_id"]] = []
 
-        (3) Next, we merge the active segments from all of the window_ids + sort them by start time. We now have the
-        list of active segments. (note, it's very possible that active segments overlap if a user is flipping back
-        and forth between tabs)
+            snapshot_data_by_window_id[item["window_id"]].append(item["snapshot_data"])
 
-        (4) To complete the recording, we fill in the gaps between active segments with "inactive segments". In
-        determining which window should be used for the inactive segment, we try to minimize the switching of windows.
-        """
+        metadata = get_metadata_from_events_summary(snapshot_data_by_window_id)
 
-        start_and_end_times_by_window_id: Dict[WindowId, RecordingSegment] = {}
+        response = {**metadata, "snapshot_data_by_window_id": snapshot_data_by_window_id, "has_next": False}
+        response["distinct_id"] = cast(str, distinct_id)
 
-        # Get the active segments for each window_id
-        all_active_segments: List[RecordingSegment] = []
+        return response
 
-        for window_id, events_summary in events_summary_by_window_id.items():
-            active_segments_for_window_id = get_active_segments_from_event_list(events_summary, window_id)
+    # Ingestion write directly to Redis as a sort of hot-cache. Until the recording is "finished" it will remain here
+    @staticmethod
+    def ingest(team_id: int, events: dict) -> None:
+        # NOTE: WE shouldn't use the global redis client here but for local PoC its fine
+        pipe = get_client().pipeline()
 
-            all_active_segments.extend(active_segments_for_window_id)
+        for event in events:
+            if event["event"] == "$snapshot":
+                distinct_id = event["properties"]["distinct_id"]
+                session_id = event["properties"]["$session_id"]
+                window_id = event["properties"].get("$window_id")
+                snapshot_data = event["properties"]["$snapshot_data"]
 
-            start_and_end_times_by_window_id[window_id] = RecordingSegment(
-                window_id=window_id,
-                start_time=parse_snapshot_timestamp(events_summary[0]["timestamp"]),
-                end_time=parse_snapshot_timestamp(events_summary[-1]["timestamp"]),
-                is_active=False,  # We don't know yet
-            )
+                # NOTE: Do we need distinctId here?
+                payload = {
+                    "window_id": window_id,
+                    "distinct_id": distinct_id,
+                    "snapshot": snapshot_data,
+                }
 
-        # Sort the active segments by start time. This will interleave active segments
-        # from different windows
-        all_active_segments.sort(key=lambda segment: segment["start_time"])
+                key = get_key(team_id, session_id)
+                pipe.lpush(key, json.dumps(payload))
+                # NOTE: NX is only supported by redis 7+
+                # TODO: Make sure redis is 7+
+                # pipe.expire(key, settings.SESSION_RECORDINGS_HOT_STORAGE_TTL_SECONDS, nx=True)
+                pipe.expire(key, settings.SESSION_RECORDINGS_HOT_STORAGE_TTL_SECONDS)
 
-        # These start and end times are used to make sure the segments span the entire recording
-        first_start_time = min([cast(datetime, x["start_time"]) for x in start_and_end_times_by_window_id.values()])
-        last_end_time = max([cast(datetime, x["end_time"]) for x in start_and_end_times_by_window_id.values()])
-
-        # Now, we fill in the gaps between the active segments with inactive segments
-        all_segments: List[RecordingSegment] = []
-        current_timestamp = first_start_time
-        current_window_id: WindowId = sorted(
-            start_and_end_times_by_window_id, key=lambda x: start_and_end_times_by_window_id[x]["start_time"]
-        )[0]
-
-        for index, segment in enumerate(all_active_segments):
-            # It's possible that segments overlap and we don't need to fill a gap
-            if segment["start_time"] > current_timestamp:
-                all_segments.extend(
-                    generate_inactive_segments_for_range(
-                        current_timestamp,
-                        segment["start_time"],
-                        current_window_id,
-                        start_and_end_times_by_window_id,
-                        is_first_segment=index == 0,
-                    )
-                )
-            all_segments.append(segment)
-            current_window_id = segment["window_id"]
-            current_timestamp = max(segment["end_time"], current_timestamp)
-
-        # If the last segment ends before the recording ends, we need to fill in the gap
-        if current_timestamp < last_end_time:
-            all_segments.extend(
-                generate_inactive_segments_for_range(
-                    current_timestamp,
-                    last_end_time,
-                    current_window_id,
-                    start_and_end_times_by_window_id,
-                    is_last_segment=True,
-                    is_first_segment=current_timestamp == first_start_time,
-                )
-            )
-
-        all_events_summary: List[SessionRecordingEventSummary] = list(
-            flatten(list(events_summary_by_window_id.values()))
-        )
-
-        click_count = len([x for x in all_events_summary if x["type"] == 3 and x["data"]["source"] == 2])
-        keypress_count = len([x for x in all_events_summary if x["type"] == 3 and x["data"]["source"] == 5])
-        urls: List[str] = [
-            cast(str, x["data"]["href"]) for x in all_events_summary if isinstance(x.get("data", {}).get("href"), str)
-        ]
-
-        return RecordingMetadata(
-            distinct_id="",  # Will be added by the caller
-            segments=all_segments,
-            start_and_end_times_by_window_id=start_and_end_times_by_window_id,
-            start_time=first_start_time,
-            end_time=last_end_time,
-            duration=(last_end_time - first_start_time).seconds,
-            click_count=click_count,
-            keypress_count=keypress_count,
-            urls=urls,
-        )
+        pipe.execute()
