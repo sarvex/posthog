@@ -8,7 +8,7 @@ from posthog import settings
 from posthog.celery import ee_persist_single_recording
 from posthog.models.person.person import Person
 from posthog.models.session_recording.metadata import (
-    DecompressedRecordingData,
+    RecordingSnapshotsData,
     RecordingMatchingEvents,
     RecordingMetadata,
 )
@@ -48,7 +48,7 @@ class SessionRecording(UUIDModel):
 
     # Metadata can be loaded from Clickhouse or S3
     _metadata: Optional[RecordingMetadata] = None
-    _snapshots: Optional[DecompressedRecordingData] = None
+    _snapshots: Optional[RecordingSnapshotsData] = None
 
     def load_metadata(self) -> bool:
         from posthog.queries.session_recordings.session_recording_events import SessionRecordingEvents

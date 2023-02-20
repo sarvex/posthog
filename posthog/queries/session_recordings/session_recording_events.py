@@ -7,7 +7,7 @@ from statshog.defaults.django import statsd
 from posthog.client import sync_execute
 from posthog.models import Team
 from posthog.models.session_recording.metadata import (
-    DecompressedRecordingData,
+    RecordingSnapshotsData,
     RecordingMetadata,
     RecordingSegment,
     SessionRecordingEvent,
@@ -16,12 +16,13 @@ from posthog.models.session_recording.metadata import (
     WindowId,
 )
 from posthog.redis import get_client
-from posthog.session_recordings.session_recording_helpers import (
-    decompress_chunked_snapshot_data,
+from posthog.session_recordings.session_recording_data import (
     generate_inactive_segments_for_range,
     get_active_segments_from_event_list,
     parse_snapshot_timestamp,
 )
+from posthog.session_recordings.session_recording_helpers import decompress_chunked_snapshot_data
+
 from posthog.utils import flatten
 
 RECORDINGS_DATA_KEY = "@posthog/recordings/"
@@ -67,10 +68,6 @@ class SessionRecordingEvents:
         return ("", {})
 
     def _query_recording_snapshots(self, include_snapshots=False) -> List[SessionRecordingEvent]:
-        redis_results = self._query_recording_snapshots_redis()
-        if redis_results:
-            return redis_results
-
         fields = ["session_id", "window_id", "distinct_id", "timestamp", "events_summary"]
         if include_snapshots:
             fields.append("snapshot_data")
@@ -94,9 +91,9 @@ class SessionRecordingEvents:
             for columns in response
         ]
 
-    def _query_recording_snapshots_redis(self):
+    def _query_recording_snapshots_redis(self, limit=-1, offset=0) -> List[SessionRecordingEvent]:
         key = get_key(self._team.id, self._session_recording_id)
-        snapshots = get_client().lrange(key, 0, -1)
+        snapshots = get_client().lrange(key, offset, limit)
 
         items = sorted([json.loads(x) for x in snapshots], key=lambda x: x["snapshot"]["timestamp"])
 
@@ -120,7 +117,7 @@ class SessionRecordingEvents:
 
         for event in events:
             if event["event"] == "$snapshot":
-                session_id = event["properties"][""]
+                distinct_id = event["properties"]["distinct_id"]
                 session_id = event["properties"]["$session_id"]
                 window_id = event["properties"].get("$window_id")
                 snapshot_data = event["properties"]["$snapshot_data"]
@@ -128,6 +125,7 @@ class SessionRecordingEvents:
                 # NOTE: Do we need distinctId here?
                 payload = {
                     "window_id": window_id,
+                    "distinct_id": distinct_id,
                     "snapshot": snapshot_data,
                 }
 
@@ -136,7 +134,11 @@ class SessionRecordingEvents:
 
         pipe.execute()
 
-    def get_snapshots(self, limit, offset) -> Optional[DecompressedRecordingData]:
+    def get_snapshots(self, limit, offset) -> Optional[RecordingSnapshotsData]:
+        new_results = self.get_snapshots_redis(limit, offset)
+        if new_results:
+            return new_results
+
         all_snapshots = [
             SnapshotDataTaggedWithWindowId(
                 window_id=recording_snapshot["window_id"], snapshot_data=recording_snapshot["snapshot_data"]
@@ -150,6 +152,22 @@ class SessionRecordingEvents:
         if decompressed["snapshot_data_by_window_id"] == {}:
             return None
         return decompressed
+
+    def get_snapshots_redis(self, limit, offset) -> Optional[RecordingSnapshotsData]:
+        return None
+        # all_snapshots = [
+        #     SnapshotDataTaggedWithWindowId(
+        #         window_id=recording_snapshot["window_id"], snapshot_data=recording_snapshot["snapshot_data"]
+        #     )
+        #     for recording_snapshot in self._query_recording_snapshots_redis(include_snapshots=True)
+        # ]
+        # decompressed = decompress_chunked_snapshot_data(
+        #     self._team.pk, self._session_recording_id, all_snapshots, limit, offset
+        # )
+
+        # if decompressed["snapshot_data_by_window_id"] == {}:
+        #     return None
+        # return decompressed
 
     def get_metadata(self) -> Optional[RecordingMetadata]:
         snapshots = self._query_recording_snapshots(include_snapshots=False)

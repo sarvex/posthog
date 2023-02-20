@@ -16,7 +16,7 @@ from posthog.models.team import Team
 from posthog.queries.session_recordings.session_recording_events import RecordingMetadata, SessionRecordingEvents
 from posthog.session_recordings.session_recording_helpers import (
     ACTIVITY_THRESHOLD_SECONDS,
-    DecompressedRecordingData,
+    RecordingSnapshotsData,
     RecordingSegment,
 )
 from posthog.session_recordings.test.test_factory import create_chunked_snapshots, create_snapshot
@@ -70,7 +70,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
             )
 
             filter = create_recording_filter("1")
-            recording: DecompressedRecordingData = SessionRecordingEvents(
+            recording: RecordingSnapshotsData = SessionRecordingEvents(
                 team=self.team, session_recording_id="1"
             ).get_snapshots(filter.limit, filter.offset)
 
@@ -107,7 +107,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
             )
 
             filter = create_recording_filter("1")
-            recording: DecompressedRecordingData = SessionRecordingEvents(
+            recording: RecordingSnapshotsData = SessionRecordingEvents(
                 team=self.team, session_recording_id="1"
             ).get_snapshots(filter.limit, filter.offset)
 
@@ -118,7 +118,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
 
     def test_get_snapshots_with_no_such_session(self):
         filter = create_recording_filter("xxx")
-        recording: DecompressedRecordingData = SessionRecordingEvents(
+        recording: RecordingSnapshotsData = SessionRecordingEvents(
             team=self.team, session_recording_id="xxx"
         ).get_snapshots(filter.limit, filter.offset)
         assert not recording
@@ -138,7 +138,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
                 )
 
             filter = create_recording_filter(chunked_session_id)
-            recording: DecompressedRecordingData = SessionRecordingEvents(
+            recording: RecordingSnapshotsData = SessionRecordingEvents(
                 team=self.team, session_recording_id=chunked_session_id
             ).get_snapshots(chunk_limit, filter.offset)
             self.assertEqual(len(recording["snapshot_data_by_window_id"][""]), chunk_limit * snapshots_per_chunk)
@@ -160,7 +160,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
                 )
 
             filter = create_recording_filter(chunked_session_id, chunk_limit, chunk_offset)
-            recording: DecompressedRecordingData = SessionRecordingEvents(
+            recording: RecordingSnapshotsData = SessionRecordingEvents(
                 team=self.team, session_recording_id=chunked_session_id
             ).get_snapshots(chunk_limit, filter.offset)
 
@@ -431,7 +431,7 @@ class TestClickhouseSessionRecording(ClickhouseTestMixin, APIBaseTest):
             filter = create_recording_filter(
                 "1",
             )
-            recording: DecompressedRecordingData = SessionRecordingEvents(
+            recording: RecordingSnapshotsData = SessionRecordingEvents(
                 team=self.team, session_recording_id="1", recording_start_time=now()
             ).get_snapshots(filter.limit, filter.offset)
 

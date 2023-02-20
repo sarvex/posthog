@@ -42,7 +42,7 @@ class MatchingSessionRecordingEvent(TypedDict):
     window_id: str
 
 
-class DecompressedRecordingData(TypedDict):
+class RecordingSnapshotsData(TypedDict):
     has_next: bool
     snapshot_data_by_window_id: Dict[WindowId, List[Union[SnapshotData, SessionRecordingEventSummary]]]
 
