@@ -151,23 +151,25 @@ class SessionRecordingEvents:
 
         if decompressed["snapshot_data_by_window_id"] == {}:
             return None
+
+        decompressed["source"] = "clickhouse"
         return decompressed
 
     def get_snapshots_redis(self, limit, offset) -> Optional[RecordingSnapshotsData]:
-        return None
-        # all_snapshots = [
-        #     SnapshotDataTaggedWithWindowId(
-        #         window_id=recording_snapshot["window_id"], snapshot_data=recording_snapshot["snapshot_data"]
-        #     )
-        #     for recording_snapshot in self._query_recording_snapshots_redis(include_snapshots=True)
-        # ]
-        # decompressed = decompress_chunked_snapshot_data(
-        #     self._team.pk, self._session_recording_id, all_snapshots, limit, offset
-        # )
+        res = self._query_recording_snapshots_redis()
 
-        # if decompressed["snapshot_data_by_window_id"] == {}:
-        #     return None
-        # return decompressed
+        if not res:
+            return None
+
+        snapshot_data_by_window_id = {}
+
+        for item in res:
+            if not snapshot_data_by_window_id.get(item["window_id"]):
+                snapshot_data_by_window_id[item["window_id"]] = []
+
+            snapshot_data_by_window_id[item["window_id"]].append(item["snapshot_data"])
+
+        return {"snapshot_data_by_window_id": snapshot_data_by_window_id, "has_next": False, "source": "redis"}
 
     def get_metadata(self) -> Optional[RecordingMetadata]:
         snapshots = self._query_recording_snapshots(include_snapshots=False)

@@ -43,6 +43,7 @@ class MatchingSessionRecordingEvent(TypedDict):
 
 
 class RecordingSnapshotsData(TypedDict):
+    source: str  # "clickhouse" or "redis"
     has_next: bool
     snapshot_data_by_window_id: Dict[WindowId, List[Union[SnapshotData, SessionRecordingEventSummary]]]
 
