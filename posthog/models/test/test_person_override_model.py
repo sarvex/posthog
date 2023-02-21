@@ -210,7 +210,7 @@ pytestmark = pytest.mark.django_db
         ).save()
 
 
-def test_person_override_same_old_person_id_in_different_teams():
+def test_person_override_allow_same_old_person_id_in_different_teams():
     """Test a new old_person_id can match an existing from a different team."""
     organization = create_organization(name="test")
     team = create_team(organization=organization)
@@ -304,7 +304,7 @@ def test_person_override_allows_override_person_id_as_old_person_id_in_different
     assert p1.team != p2.team
 
 
-def test_person_override_must_exist_in_person_table():
+def test_person_override_creation_disallowed_for_non_existing_person():
     """This is guaranteed by the foreign key constraint."""
     organization = create_organization(name="test")
     team = create_team(organization=organization)
@@ -379,7 +379,7 @@ def test_person_override_allows_duplicate_override_person_id():
     assert len(set(p.old_person_id for p in created)) == n_person_overrides
 
 
-def test_person_override_old_person_id_as_override_person_id_in_different_teams():
+def test_person_override_allows_old_person_id_as_override_person_id_in_different_teams():
     """Test a new override_person_id can match an old in a different team."""
     organization = create_organization(name="test")
     team = create_team(organization=organization)
@@ -425,9 +425,7 @@ def test_person_override_old_person_id_as_override_person_id_in_different_teams(
 
 @pytest.mark.django_db(transaction=True)
 def test_person_deletion_disallowed_when_override_exists():
-    """Person deletion would result in an error if the override exists
-    TODO: fix all person deletions
-    """
+    """Person deletion would result in an error if the override exists"""
     organization = create_organization(name="test")
     team = create_team(organization=organization)
 
@@ -452,28 +450,58 @@ def test_person_deletion_disallowed_when_override_exists():
 
 
 """
-Concurrency tests:
+Concurrency tests for person overrides table
+Goal: verify that we don't end up in a situation with the same uuid is both
+an old person id and an override person id
+
 - there are two cases that we want to check for
     - concurrent merges
     - concurrent merge and person deletion
 
 In both cases one of the transactions will wait on the lock,
-so they can only complete in one order (the second one failing).
-TODO: Tomas to update the comment
+so they can only complete in one order (which is tested below).
 
-Tests:
-concurrency between:
-- 2 merges
-    - the later started transaction finishes first
-- merge & real person delete (with deletes overrides)
-    - merge starts - person deletion runs fully - merge finishes
-    - person d starts - merge finishes fully - person d finishes
+Note that to test the race condition scenario we need to:
+    1. create multiple concurrent transactions, such that we can verify
+    constraints are enforced at COMMIT time.
+    2. enable transactions for the Django test. This is more so we can see data
+    from the main Django PostgreSQL connection session in the other
+    concurrent transactions. Not 100% required but makes things a little
+    easier to write.
 """
 
 
 @pytest.mark.django_db(transaction=True)
-def test_concurrent_delete_first_then_merge_fails():
-    # Can't do concurrently the other order due to waiting on the lock forever
+def test_person_override_allow_merge_first_then_delete():
+    # This essentially just verifies our merge and delete functions work as expected
+    organization = create_organization(name="test")
+    team = create_team(organization=organization)
+
+    oldest_event = dt.datetime.now(dt.timezone.utc)
+    old_person_id = uuid4()
+    override_person_id = uuid4()
+
+    Person.objects.create(uuid=old_person_id, team=team)
+    Person.objects.create(uuid=override_person_id, team=team)
+    with create_connection() as merge_cursor:
+        merge_cursor.execute("BEGIN")
+        _merge_people(team, merge_cursor, old_person_id, override_person_id, oldest_event)
+        merge_cursor.execute("COMMIT")
+
+    assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id")) == [
+        (old_person_id, override_person_id),
+    ]  # type: ignore
+
+    with create_connection() as delete_cursor:
+        delete_cursor.execute("BEGIN")
+        _delete_person(team, delete_cursor, override_person_id)
+        delete_cursor.execute("COMMIT")
+
+    assert list(PersonOverride.objects.filter(team=team).all()) == []  # type: ignore
+
+
+@pytest.mark.django_db(transaction=True)
+def test_person_override_disallow_merge_if_delete_ran_concurrently():
     organization = create_organization(name="test")
     team = create_team(organization=organization)
 
