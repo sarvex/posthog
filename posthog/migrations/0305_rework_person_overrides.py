@@ -1,6 +1,7 @@
 from django.db import migrations
 
 
+# no-op change
 class Migration(migrations.Migration):
 
     dependencies = [
