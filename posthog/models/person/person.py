@@ -89,18 +89,6 @@ class Person(models.Model):
 
     # Has an index on properties -> email from migration 0121, (team_id, id DESC) from migration 0164
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                # This was added to enable the overrides table to reference this
-                # table using the uuid. Ideally we'd put this on (team_id, uuid)
-                # but I couldn't see if Django could handle SQL `REFERENCES` on
-                # a composite key.
-                fields=["uuid"],
-                name="unique uuid for person",
-            ),
-        ]
-
 
 class PersonDistinctId(models.Model):
     class Meta:
@@ -137,16 +125,12 @@ class PersonOverride(models.Model):
        (e.g. if a row exists with old_person_id=123 then we would not allow a row with
         override_person_id=123 to exist, as that would require a self join to figure
         out the ultimate override_person_id required for old_person_id=123).
-        To accomplish this:
-        3.1. Ensuring old_person_id doesn't exist in person table (assumption about code)
-            - during person merges we update the override_ids to point to the new merged person
-            - during person deletions we delete the overide table entries (they aren't needed anymore)
-        3.2. Ensuring any override_person_id exists in person table (db level check)
-            Override person field is a foreign key into the person table.
+        To accomplish this we use a series of constraints.
     """
 
     class Meta:
         constraints = [
+            models.UniqueConstraint(fields=["team", "old_person_id"], name="unique override per old_person_id"),
             models.CheckConstraint(
                 check=~Q(old_person_id__exact=F("override_person_id")),
                 name="old_person_id_different_from_override_person_id",
