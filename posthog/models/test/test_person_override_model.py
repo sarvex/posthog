@@ -576,14 +576,14 @@ def test_person_override_merge(people, team, oldest_event):
     assert [_[0] for _ in PersonOverrideHelper.objects.all().values_list("uuid")] == [
         old_person.uuid,
         override_person.uuid,
-    ]  # type: ignore
+    ]
 
     old_person_id = PersonOverrideHelper.objects.filter(uuid=old_person.uuid).all()[0].id
     override_person_id = PersonOverrideHelper.objects.filter(uuid=override_person.uuid).all()[0].id
 
     assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id")) == [
         (old_person_id, override_person_id)
-    ]  # type: ignore
+    ]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -605,7 +605,7 @@ def test_person_override_allow_consecutive_merges(people, team, oldest_event):
         old_person.uuid,
         override_person.uuid,
         new_override_person.uuid,
-    ]  # type: ignore
+    ]
 
     old_person_id = PersonOverrideHelper.objects.filter(uuid=old_person.uuid).all()[0].id
     override_person_id = PersonOverrideHelper.objects.filter(uuid=override_person.uuid).all()[0].id
@@ -618,7 +618,7 @@ def test_person_override_allow_consecutive_merges(people, team, oldest_event):
             (override_person_id, new_override_person_id),
             (old_person_id, new_override_person_id),
         ]
-    ), f"{mappings=} {old_person_id=}, {override_person_id=}, {new_override_person_id=}"  # type: ignore
+    ), f"{mappings=} {old_person_id=}, {override_person_id=}, {new_override_person_id=}"
 
 
 @pytest.mark.django_db(transaction=True)
@@ -678,14 +678,14 @@ def test_person_override_disallows_concurrent_merge(people, team, oldest_event):
     assert [_[0] for _ in PersonOverrideHelper.objects.all().values_list("uuid")] == [
         override_person.uuid,
         new_override_person.uuid,
-    ]  # type: ignore
+    ]
 
     override_person_id = PersonOverrideHelper.objects.filter(uuid=override_person.uuid).all()[0].id
     new_override_person_id = PersonOverrideHelper.objects.filter(uuid=new_override_person.uuid).all()[0].id
 
     assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id")) == [
         (override_person_id, new_override_person_id)
-    ]  # type: ignore
+    ]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -738,7 +738,7 @@ def test_person_override_disallows_concurrent_merge_different_order(people, team
         old_person.uuid,
         override_person.uuid,
         new_override_person.uuid,
-    ]  # type: ignore
+    ]
 
     old_person_id = PersonOverrideHelper.objects.filter(uuid=old_person.uuid).all()[0].id
     override_person_id = PersonOverrideHelper.objects.filter(uuid=override_person.uuid).all()[0].id
@@ -748,4 +748,4 @@ def test_person_override_disallows_concurrent_merge_different_order(people, team
     assert list(PersonOverride.objects.all().values_list("old_person_id", "override_person_id", "version")) == [
         (override_person_id, new_override_person_id, 1),
         (old_person_id, new_override_person_id, 2),
-    ]  # type: ignore
+    ]
