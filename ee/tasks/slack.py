@@ -41,9 +41,7 @@ def _handle_slack_event(event_payload: Any) -> None:
     for link_obj in links_to_unfurl:
         link = link_obj.get("url")
         parsed = urlparse(link)
-        matches = re.search(SHARED_LINK_REGEX, parsed.path)
-
-        if matches:
+        if matches := re.search(SHARED_LINK_REGEX, parsed.path):
             share_token = matches[1]
 
             # First we try and get the sharingconfig for the given link

@@ -55,7 +55,7 @@ class TeamManager:
 
     def _get_properties(self, query, team_id) -> Set[str]:
         rows = sync_execute(query, {"team_id": team_id})
-        return set(name for name, _ in rows)
+        return {name for name, _ in rows}
 
 
 class Query:
@@ -120,7 +120,7 @@ def _get_queries(since_hours_ago: int, min_query_time: int) -> List[Query]:
     "Finds queries that have happened since cutoff that were slow"
 
     raw_queries = sync_execute(
-        f"""
+        """
         SELECT
             query,
             query_duration_ms
@@ -182,7 +182,7 @@ def materialize_properties_task(
         if (property_name, table_column) not in get_materialized_columns(table):
             result.append(suggestion)
 
-    if len(result) > 0:
+    if result:
         logger.info(f"Calculated columns that could be materialized. count={len(result)}")
     else:
         logger.info("Found no columns to materialize.")

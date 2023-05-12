@@ -231,7 +231,7 @@ def list_recordings(filter: SessionRecordingsFilter, request: request.Request, t
 
         persisted_recordings = persisted_recordings_queryset.all()
 
-        recordings = recordings + list(persisted_recordings)
+        recordings += list(persisted_recordings)
 
         remaining_session_ids = list(set(all_session_ids) - {x.session_id for x in persisted_recordings})
         filter = filter.shallow_clone({SESSION_RECORDINGS_FILTER_IDS: json.dumps(remaining_session_ids)})
@@ -240,7 +240,7 @@ def list_recordings(filter: SessionRecordingsFilter, request: request.Request, t
         # Only go to clickhouse if we still have remaining specified IDs or we are not specifying IDs
         (ch_session_recordings, more_recordings_available) = SessionRecordingList(filter=filter, team=team).run()
         recordings_from_clickhouse = SessionRecording.get_or_build_from_clickhouse(team, ch_session_recordings)
-        recordings = recordings + recordings_from_clickhouse
+        recordings += recordings_from_clickhouse
 
     recordings = [x for x in recordings if not x.deleted]
 
@@ -264,10 +264,10 @@ def list_recordings(filter: SessionRecordingsFilter, request: request.Request, t
         .prefetch_related(Prefetch("person__persondistinctid_set", to_attr="distinct_ids_cache"))
     )
 
-    distinct_id_to_person = {}
-    for person_distinct_id in person_distinct_ids:
-        distinct_id_to_person[person_distinct_id.distinct_id] = person_distinct_id.person
-
+    distinct_id_to_person = {
+        person_distinct_id.distinct_id: person_distinct_id.person
+        for person_distinct_id in person_distinct_ids
+    }
     for recording in recordings:
         recording.viewed = recording.session_id in viewed_session_recordings
         recording.person = distinct_id_to_person.get(recording.distinct_id)

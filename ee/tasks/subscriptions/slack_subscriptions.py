@@ -52,9 +52,10 @@ def send_slack_subscription_report(
     else:
         title = f"Your subscription to the {resource_info.kind} *{resource_info.name}* is ready! 🎉"
 
-    blocks = []
-
-    blocks.extend([{"type": "section", "text": {"type": "mrkdwn", "text": title}}, _block_for_asset(first_asset)])
+    blocks = [
+        {"type": "section", "text": {"type": "mrkdwn", "text": title}},
+        _block_for_asset(first_asset),
+    ]
 
     if other_assets:
         blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": "_See 🧵 for more Insights_"}})
@@ -82,9 +83,7 @@ def send_slack_subscription_report(
 
     message_res = slack_integration.client.chat_postMessage(channel=channel, blocks=blocks, text=title)
 
-    thread_ts = message_res.get("ts")
-
-    if thread_ts:
+    if thread_ts := message_res.get("ts"):
         for asset in other_assets:
             slack_integration.client.chat_postMessage(
                 channel=channel, thread_ts=thread_ts, blocks=[_block_for_asset(asset)]

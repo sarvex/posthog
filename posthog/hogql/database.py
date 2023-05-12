@@ -61,13 +61,11 @@ class Table(BaseModel):
             if isinstance(database_field, DatabaseField):
                 asterisk[key] = database_field
             elif (
-                isinstance(database_field, Table)
-                or isinstance(database_field, LazyTable)
-                or isinstance(database_field, VirtualTable)
-                or isinstance(database_field, FieldTraverser)
+                not isinstance(database_field, Table)
+                and not isinstance(database_field, LazyTable)
+                and not isinstance(database_field, VirtualTable)
+                and not isinstance(database_field, FieldTraverser)
             ):
-                pass  # ignore virtual tables for now
-            else:
                 raise ValueError(f"Unknown field type {type(database_field).__name__} for asterisk")
         return asterisk
 
@@ -127,10 +125,11 @@ def join_with_persons_table(from_table: str, to_table: str, requested_fields: Li
     argmax_version: Callable[[ast.Expr], ast.Expr] = lambda field: ast.Call(
         name="argMax", args=[field, ast.Field(chain=["version"])]
     )
-    for field in requested_fields:
-        if field != "id":
-            fields_to_select.append(ast.Alias(alias=field, expr=argmax_version(ast.Field(chain=[field]))))
-
+    fields_to_select.extend(
+        ast.Alias(alias=field, expr=argmax_version(ast.Field(chain=[field])))
+        for field in requested_fields
+        if field != "id"
+    )
     id = ast.Field(chain=["id"])
 
     return ast.JoinExpr(
@@ -182,10 +181,11 @@ def join_with_max_person_distinct_id_table(from_table: str, to_table: str, reque
     argmax_version: Callable[[ast.Expr], ast.Expr] = lambda field: ast.Call(
         name="argMax", args=[field, ast.Field(chain=["version"])]
     )
-    for field in requested_fields:
-        if field != "distinct_id":
-            fields_to_select.append(ast.Alias(alias=field, expr=argmax_version(ast.Field(chain=[field]))))
-
+    fields_to_select.extend(
+        ast.Alias(alias=field, expr=argmax_version(ast.Field(chain=[field])))
+        for field in requested_fields
+        if field != "distinct_id"
+    )
     distinct_id = ast.Field(chain=["distinct_id"])
 
     return ast.JoinExpr(

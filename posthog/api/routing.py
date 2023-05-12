@@ -15,10 +15,7 @@ from posthog.models.team import Team
 from posthog.models.user import User
 from posthog.user_permissions import UserPermissions
 
-if TYPE_CHECKING:
-    _GenericViewSet = GenericViewSet
-else:
-    _GenericViewSet = object
+_GenericViewSet = GenericViewSet if TYPE_CHECKING else object
 
 
 class DefaultRouterPlusPlus(ExtendedDefaultRouter):
@@ -53,8 +50,7 @@ class StructuredViewSetMixin(_GenericViewSet):
 
     @property
     def team_id(self) -> int:
-        team_from_token = self._get_team_from_request()
-        if team_from_token:
+        if team_from_token := self._get_team_from_request():
             return team_from_token.id
 
         if self.legacy_team_compatibility:
@@ -66,8 +62,7 @@ class StructuredViewSetMixin(_GenericViewSet):
 
     @cached_property
     def team(self) -> Team:
-        team_from_token = self._get_team_from_request()
-        if team_from_token:
+        if team_from_token := self._get_team_from_request():
             return team_from_token
 
         if self.legacy_team_compatibility:
@@ -100,13 +95,12 @@ class StructuredViewSetMixin(_GenericViewSet):
         for source, destination in self.filter_rewrite_rules.items():
             parents_query_dict[destination] = parents_query_dict[source]
             del parents_query_dict[source]
-        if parents_query_dict:
-            try:
-                return queryset.filter(**parents_query_dict)
-            except ValueError:
-                raise NotFound()
-        else:
+        if not parents_query_dict:
             return queryset
+        try:
+            return queryset.filter(**parents_query_dict)
+        except ValueError:
+            raise NotFound()
 
     @cached_property
     def parents_query_dict(self) -> Dict[str, Any]:
@@ -155,11 +149,8 @@ class StructuredViewSetMixin(_GenericViewSet):
 
     def _get_team_from_request(self) -> Optional["Team"]:
         team_found = None
-        token = get_token(None, self.request)
-
-        if token:
-            team = Team.objects.get_team_from_token(token)
-            if team:
+        if token := get_token(None, self.request):
+            if team := Team.objects.get_team_from_token(token):
                 team_found = team
             else:
                 raise AuthenticationFailed()

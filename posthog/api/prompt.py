@@ -104,10 +104,10 @@ class PromptSequenceViewSet(StructuredViewSetMixin, viewsets.ViewSet):
             # check if the local state is more recent than the one in the db, then update accordingly
             if local_state:
                 if saved_state and local_state.last_updated_at > saved_state.last_updated_at:
-                    saved_state.last_updated_at = local_state.last_updated_at
                     saved_state.step = local_state.step
                     saved_state.completed = local_state.completed
                     saved_state.dismissed = local_state.dismissed
+                    saved_state.last_updated_at = local_state.last_updated_at
                     states_to_update.append(saved_state)
                     state = saved_state
                 elif saved_state is not None:
@@ -115,12 +115,10 @@ class PromptSequenceViewSet(StructuredViewSetMixin, viewsets.ViewSet):
                 else:
                     states_to_create.append(local_state)
                     state = local_state
-            else:
-                if saved_state:
-                    state = saved_state
-                # if the sequence should autorun for all users, we create a state with no step, meaning the user has not seen it but should start seeing it
-                elif sequence.autorun:
-                    state = UserPromptState(user=request.user, sequence=sequence, step=None)
+            elif saved_state:
+                state = saved_state
+            elif sequence.autorun:
+                state = UserPromptState(user=request.user, sequence=sequence, step=None)
 
             if state:
                 up_to_date_states.append(state)
@@ -133,7 +131,7 @@ class PromptSequenceViewSet(StructuredViewSetMixin, viewsets.ViewSet):
             must_have_completed = sequence.must_have_completed.all()
             if len(must_have_completed) > 0:
                 current_state = next((s for s in up_to_date_states if s.sequence in must_have_completed), None)
-                if not current_state or (current_state and not current_state.completed):
+                if not current_state or not current_state.completed:
                     continue
             my_prompts["state"][sequence.key] = UserPromptStateSerializer(state).data
             my_prompts["sequences"].append(PromptSequenceSerializer(sequence).data)
@@ -216,10 +214,10 @@ def prompt_webhook(request: request.Request):
         )
     serialized_data = serializer.validated_data
 
-    prompt_data = []
-    for prompt in serialized_data["sequence"]["prompts"]:
-        prompt_data.append(PromptSerializer(prompt).data)
-
+    prompt_data = [
+        PromptSerializer(prompt).data
+        for prompt in serialized_data["sequence"]["prompts"]
+    ]
     # get or create sequence from webhook
     sequence_data = WebhookSequenceSerializer(serialized_data["sequence"]).data
     try:

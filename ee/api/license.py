@@ -60,10 +60,7 @@ class LicenseViewSet(
     serializer_class = LicenseSerializer
 
     def get_queryset(self) -> QuerySet:
-        if is_cloud():
-            return License.objects.none()
-
-        return super().get_queryset()
+        return License.objects.none() if is_cloud() else super().get_queryset()
 
     def destroy(self, request: request.Request, pk=None, **kwargs) -> Response:
         license = get_object_or_404(License, pk=pk)

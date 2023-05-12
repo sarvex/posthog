@@ -32,7 +32,7 @@ class TestExperimentCRUD(APILicensedTest):
             f"/api/projects/{self.team.id}/experiments/",
             data={
                 "name": "Test Experiment",
-                "feature_flag_key": f"flag_0",
+                "feature_flag_key": "flag_0",
                 "filters": {"events": [{"order": 0, "id": "$pageview"}]},
                 "start_date": "2021-12-01T10:23",
                 "parameters": None,
@@ -44,7 +44,7 @@ class TestExperimentCRUD(APILicensedTest):
             f"/api/projects/{self.team.id}/experiments/",
             data={
                 "name": "Test Experiment",
-                "feature_flag_key": f"exp_flag_000",
+                "feature_flag_key": "exp_flag_000",
                 "filters": {"events": [{"order": 0, "id": "$pageview"}]},
                 "start_date": "2021-12-01T10:23",
                 "end_date": "2021-12-01T10:23",
@@ -738,7 +738,11 @@ class TestExperimentCRUD(APILicensedTest):
         # add another random feature flag
         self.client.post(
             f"/api/projects/{self.team.id}/feature_flags/",
-            data={"name": f"flag", "key": f"flag_0", "filters": {"groups": [{"rollout_percentage": 5}]}},
+            data={
+                "name": "flag",
+                "key": "flag_0",
+                "filters": {"groups": [{"rollout_percentage": 5}]},
+            },
             format="json",
         ).json()
 

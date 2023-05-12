@@ -22,7 +22,9 @@ class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):
 
         assert response.json()["property_type"] == "DateTime"
 
-        query_list_response = self.client.get(f"/api/projects/@current/property_definitions")
+        query_list_response = self.client.get(
+            "/api/projects/@current/property_definitions"
+        )
         self.assertEqual(query_list_response.status_code, status.HTTP_200_OK)
         matches = [p["name"] for p in query_list_response.json()["results"] if p["name"] == "a timestamp"]
         assert len(matches) == 1
@@ -77,7 +79,9 @@ class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):
         set_property = EnterprisePropertyDefinition.objects.create(team=self.team, name="$set", description="")
         set_property.tagged_items.create(tag_id=tag.id)
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=enter")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search=enter"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 1)
@@ -86,7 +90,9 @@ class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):
         self.assertEqual(response_data["results"][0]["description"], "")
         self.assertEqual(response_data["results"][0]["tags"], ["deprecated"])
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=enterprise")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search=enterprise"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 1)
@@ -95,7 +101,7 @@ class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):
 
         # add event_names=['$pageview'] to get properties that have been seen by this event
         response = self.client.get(
-            f"/api/projects/@current/property_definitions/?search=property&event_names=%5B%22%24pageview%22%5D"
+            "/api/projects/@current/property_definitions/?search=property&event_names=%5B%22%24pageview%22%5D"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
@@ -106,28 +112,36 @@ class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):
         self.assertEqual(response_data["results"][1]["is_seen_on_filtered_events"], False)
 
         response = self.client.get(
-            f"/api/projects/@current/property_definitions/?search=property&event_names=%5B%22%24pageview%22%5D&filter_by_event_names=true"
+            "/api/projects/@current/property_definitions/?search=property&event_names=%5B%22%24pageview%22%5D&filter_by_event_names=true"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 1)
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=er pr")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search=er pr"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 2)
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=bust")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search=bust"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 0)
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=set")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search=set"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 0)
 
-        response = self.client.get(f"/api/projects/@current/property_definitions/?search=")
+        response = self.client.get(
+            "/api/projects/@current/property_definitions/?search="
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 2)

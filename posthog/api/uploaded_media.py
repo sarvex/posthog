@@ -93,43 +93,42 @@ class MediaViewSet(StructuredViewSetMixin, viewsets.GenericViewSet):
             if file.size > FOUR_MEGABYTES:
                 raise ValidationError(code="file_too_large", detail="Uploaded media must be less than 4MB")
 
-            if file.content_type.startswith("image/"):
-                uploaded_media = UploadedMedia.save_content(
-                    team=self.team,
-                    created_by=request.user,
-                    file_name=file.name,
-                    content_type=file.content_type,
-                    content=file.file,
-                )
-                if uploaded_media is None:
-                    raise APIException("Could not save media")
-
-                # to save having to copy the stream so that we can read it to verify the image,
-                # save it to minio anyway and then delete the record if it's not valid
-                bytes_to_verify = object_storage.read_bytes(uploaded_media.media_location)
-                if not validate_image_file(bytes_to_verify, user=request.user.id):
-                    statsd.incr(
-                        "uploaded_media.image_failed_validation", tags={"file_name": file.name, "team": self.team_id}
-                    )
-                    # TODO a batch process can delete media with no records in the DB or for deleted teams
-                    uploaded_media.delete()
-                    raise ValidationError(code="invalid_image", detail="Uploaded media must be a valid image")
-
-                headers = self.get_success_headers(uploaded_media.get_absolute_url())
-                statsd.incr(
-                    "uploaded_media.uploaded", tags={"team_id": self.team.pk, "content_type": file.content_type}
-                )
-                return Response(
-                    {
-                        "id": uploaded_media.id,
-                        "image_location": uploaded_media.get_absolute_url(),
-                        "name": uploaded_media.file_name,
-                    },
-                    status=status.HTTP_201_CREATED,
-                    headers=headers,
-                )
-            else:
+            if not file.content_type.startswith("image/"):
                 raise UnsupportedMediaType(file.content_type)
+            uploaded_media = UploadedMedia.save_content(
+                team=self.team,
+                created_by=request.user,
+                file_name=file.name,
+                content_type=file.content_type,
+                content=file.file,
+            )
+            if uploaded_media is None:
+                raise APIException("Could not save media")
+
+            # to save having to copy the stream so that we can read it to verify the image,
+            # save it to minio anyway and then delete the record if it's not valid
+            bytes_to_verify = object_storage.read_bytes(uploaded_media.media_location)
+            if not validate_image_file(bytes_to_verify, user=request.user.id):
+                statsd.incr(
+                    "uploaded_media.image_failed_validation", tags={"file_name": file.name, "team": self.team_id}
+                )
+                # TODO a batch process can delete media with no records in the DB or for deleted teams
+                uploaded_media.delete()
+                raise ValidationError(code="invalid_image", detail="Uploaded media must be a valid image")
+
+            headers = self.get_success_headers(uploaded_media.get_absolute_url())
+            statsd.incr(
+                "uploaded_media.uploaded", tags={"team_id": self.team.pk, "content_type": file.content_type}
+            )
+            return Response(
+                {
+                    "id": uploaded_media.id,
+                    "image_location": uploaded_media.get_absolute_url(),
+                    "name": uploaded_media.file_name,
+                },
+                status=status.HTTP_201_CREATED,
+                headers=headers,
+            )
         except KeyError:
             raise ValidationError(code="no-image-provided", detail="An image file must be provided")
         except ObjectStorageUnavailable:

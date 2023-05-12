@@ -58,7 +58,4 @@ class Migration(AsyncMigrationDefinition):
     ]
 
     def healthcheck(self):
-        if self.fail:
-            return (False, self.error_message)
-
-        return (True, None)
+        return (False, self.error_message) if self.fail else (True, None)

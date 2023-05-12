@@ -377,9 +377,9 @@ def redirect_to_site(request):
     state = urllib.parse.quote(json.dumps(params), safe="")
 
     if use_new_toolbar:
-        return redirect("{}#__posthog={}".format(app_url, state))
+        return redirect(f"{app_url}#__posthog={state}")
     else:
-        return redirect("{}#state={}".format(app_url, state))
+        return redirect(f"{app_url}#state={state}")
 
 
 @require_http_methods(["POST"])

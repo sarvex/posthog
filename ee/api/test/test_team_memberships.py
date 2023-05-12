@@ -257,7 +257,10 @@ class TestTeamMembershipsAPI(APILicensedTest):
         self.organization_membership.save()
         _, new_team, new_user = User.objects.bootstrap("Acme", "mallory@acme.com", None)
 
-        response = self.client.post(f"/api/projects/@current/explicit_members/", {"user_uuid": new_user.uuid})
+        response = self.client.post(
+            "/api/projects/@current/explicit_members/",
+            {"user_uuid": new_user.uuid},
+        )
         response_data = response.json()
 
         self.assertDictEqual(
@@ -270,7 +273,9 @@ class TestTeamMembershipsAPI(APILicensedTest):
         self.organization_membership.save()
         new_user: User = User.objects.create_and_join(self.organization, "rookie@posthog.com", None)
 
-        response = self.client.post(f"/api/projects/2137/explicit_members/", {"user_uuid": new_user.uuid})
+        response = self.client.post(
+            "/api/projects/2137/explicit_members/", {"user_uuid": new_user.uuid}
+        )
         response_data = response.json()
 
         self.assertDictEqual(self.not_found_response("Project not found."), response_data)

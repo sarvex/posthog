@@ -124,7 +124,7 @@ class TestOrganizationEnterpriseAPI(APILicensedTest):
 
         response = self.client.delete(f"/api/organizations/{self.organization.id}")
 
-        potential_err_message = f"Somehow did not delete the org as the owner"
+        potential_err_message = "Somehow did not delete the org as the owner"
         self.assertEqual(response.status_code, 204, potential_err_message)
         self.assertFalse(Organization.objects.filter(id=self.organization.id).exists(), potential_err_message)
         self.assertFalse(OrganizationMembership.objects.filter(id__in=membership_ids).exists())
@@ -155,14 +155,14 @@ class TestOrganizationEnterpriseAPI(APILicensedTest):
             )
             self.organization.refresh_from_db()
 
-            expected_response = {
-                "attr": None,
-                "detail": "Your organization access level is insufficient.",
-                "code": "permission_denied",
-                "type": "authentication_error",
-            }
             if level < OrganizationMembership.Level.ADMIN:
                 potential_err_message = f"Somehow managed to update the org as a level {level} (which is below admin)"
+                expected_response = {
+                    "attr": None,
+                    "detail": "Your organization access level is insufficient.",
+                    "code": "permission_denied",
+                    "type": "authentication_error",
+                }
                 self.assertEqual(response_rename.json(), expected_response, potential_err_message)
                 self.assertEqual(response_rename.status_code, 403, potential_err_message)
                 self.assertTrue(self.organization.name, self.CONFIG_ORGANIZATION_NAME)

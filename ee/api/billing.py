@@ -50,9 +50,8 @@ class BillingViewset(viewsets.GenericViewSet):
         org = self._get_org()
 
         # If on Cloud and we have the property billing - return 404 as we always use legacy billing it it exists
-        if hasattr(org, "billing"):
-            if org.billing.stripe_subscription_id:  # type: ignore
-                raise NotFound("Billing V1 is active for this organization")
+        if hasattr(org, "billing") and org.billing.stripe_subscription_id:
+            raise NotFound("Billing V1 is active for this organization")
 
         plan_keys = request.query_params.get("plan_keys", None)
         response = BillingManager(license).get_billing(org, plan_keys)
@@ -68,8 +67,7 @@ class BillingViewset(viewsets.GenericViewSet):
 
         org = self._get_org_required()
         if license and org:  # for mypy
-            custom_limits_usd = request.data.get("custom_limits_usd")
-            if custom_limits_usd:
+            if custom_limits_usd := request.data.get("custom_limits_usd"):
                 BillingManager(license).update_billing(org, {"custom_limits_usd": custom_limits_usd})
 
                 if distinct_id:
@@ -134,14 +132,14 @@ class BillingViewset(viewsets.GenericViewSet):
         return Response({"success": True})
 
     def _get_org(self) -> Optional[Organization]:
-        org = None if self.request.user.is_anonymous else self.request.user.organization
-
-        return org
+        return (
+            None
+            if self.request.user.is_anonymous
+            else self.request.user.organization
+        )
 
     def _get_org_required(self) -> Organization:
-        org = self._get_org()
-
-        if not org:
+        if org := self._get_org():
+            return org
+        else:
             raise Exception("You cannot interact with the billing service without an organization configured.")
-
-        return org

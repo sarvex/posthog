@@ -306,7 +306,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
             team=self.team, distinct_ids=["1", "2", "3"], properties={"$browser": "whatever", "$os": "Mac OS X"}
         )
 
-        self.client.post("/api/person/%s/split/" % person1.pk, {"main_distinct_id": "1"})
+        self.client.post(f"/api/person/{person1.pk}/split/", {"main_distinct_id": "1"})
 
         people = Person.objects.all().order_by("id")
         self.assertEqual(people.count(), 3)
@@ -351,7 +351,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
             immediate=True,
         )
 
-        response = self.client.post("/api/person/%s/split/" % person1.pk)
+        response = self.client.post(f"/api/person/{person1.pk}/split/")
         people = Person.objects.all().order_by("id")
         self.assertEqual(people.count(), 3)
         self.assertEqual(people[0].distinct_ids, ["1"])
@@ -476,7 +476,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
             immediate=True,
         )
 
-        response = self.client.post("/api/person/%s/split/" % person.uuid).json()
+        response = self.client.post(f"/api/person/{person.uuid}/split/").json()
         self.assertTrue(response["success"])
 
         people = Person.objects.all().order_by("id")
@@ -506,12 +506,12 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
             immediate=True,
         )
 
-        created_person = self.client.get("/api/person/%s/" % person.uuid).json()
+        created_person = self.client.get(f"/api/person/{person.uuid}/").json()
         created_person["properties"]["a"] = "b"
-        response = self.client.patch("/api/person/%s/" % person.uuid, created_person)
+        response = self.client.patch(f"/api/person/{person.uuid}/", created_person)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.client.get("/api/person/%s/" % person.uuid)
+        self.client.get(f"/api/person/{person.uuid}/")
 
         self._assert_person_activity(
             person_id=person.uuid,
@@ -608,7 +608,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
                 "team_id": self.team.pk,
                 "scope": "burst",
                 "rate": "5/minute",
-                "path": f"/api/projects/TEAM_ID/feature_flags",
+                "path": "/api/projects/TEAM_ID/feature_flags",
             },
         )
 
@@ -642,7 +642,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
                 "team_id": self.team.pk,
                 "scope": "persons",
                 "rate": "6/minute",
-                "path": f"/api/projects/TEAM_ID/persons/",
+                "path": "/api/projects/TEAM_ID/persons/",
             },
         )
 
@@ -650,7 +650,7 @@ class TestPerson(ClickhouseTestMixin, APIBaseTest):
         if person_id:
             url = f"/api/person/{person_id}/activity"
         else:
-            url = f"/api/person/activity"
+            url = "/api/person/activity"
 
         activity = self.client.get(url)
         self.assertEqual(activity.status_code, expected_status)

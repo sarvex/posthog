@@ -56,7 +56,7 @@ class ClickhousePaths(Paths):
         if self._filter.end_point and self._filter.start_point:
             return "WHERE start_target_index > 0 AND end_target_index > 0"
         elif self._filter.end_point or self._filter.start_point:
-            return f"WHERE target_index > 0"
+            return "WHERE target_index > 0"
         else:
             return ""
 
@@ -64,9 +64,12 @@ class ClickhousePaths(Paths):
         params: Dict[str, Union[str, None]] = {"target_point": None, "secondary_target_point": None}
 
         if self._filter.end_point and self._filter.start_point:
-            params.update({"target_point": self._filter.end_point, "secondary_target_point": self._filter.start_point})
+            params |= {
+                "target_point": self._filter.end_point,
+                "secondary_target_point": self._filter.start_point,
+            }
 
-            clause = f"""
+            clause = """
             , indexOf(compact_path, %(secondary_target_point)s) as start_target_index
             , if(start_target_index > 0, arraySlice(compact_path, start_target_index), compact_path) as start_filtered_path
             , if(start_target_index > 0, arraySlice(timings, start_target_index), timings) as start_filtered_timings
@@ -75,10 +78,7 @@ class ClickhousePaths(Paths):
             , if(end_target_index > 0, arrayResize(start_filtered_timings, end_target_index), start_filtered_timings) as filtered_timings
             , if(length(filtered_path) > %(event_in_session_limit)s, arrayConcat(arraySlice(filtered_path, 1, intDiv(%(event_in_session_limit)s,2)), ['...'], arraySlice(filtered_path, (-1)*intDiv(%(event_in_session_limit)s, 2), intDiv(%(event_in_session_limit)s, 2))), filtered_path) AS limited_path
             , if(length(filtered_timings) > %(event_in_session_limit)s, arrayConcat(arraySlice(filtered_timings, 1, intDiv(%(event_in_session_limit)s, 2)), [filtered_timings[1+intDiv(%(event_in_session_limit)s, 2)]], arraySlice(filtered_timings, (-1)*intDiv(%(event_in_session_limit)s, 2), intDiv(%(event_in_session_limit)s, 2))), filtered_timings) AS limited_timings
-            """
-
-            # Add target clause for extra fields
-            clause += " ".join(
+            """ + " ".join(
                 [
                     f"""
                         , if(start_target_index > 0, arraySlice({field}s, start_target_index), {field}s) as start_filtered_{field}s
@@ -88,7 +88,6 @@ class ClickhousePaths(Paths):
                     for field in self.extra_event_fields_and_properties
                 ]
             )
-
         else:
             clause, params = super().get_target_clause()
 
@@ -103,7 +102,9 @@ class ClickhousePaths(Paths):
         )
         funnel_persons_query, funnel_persons_param = funnel_persons_generator.actor_query(limit_actors=False)
         funnel_persons_query_new_params = funnel_persons_query.replace("%(", "%(funnel_")
-        new_funnel_params = {"funnel_" + str(key): val for key, val in funnel_persons_param.items()}
+        new_funnel_params = {
+            f"funnel_{str(key)}": val for key, val in funnel_persons_param.items()
+        }
         self.params.update(new_funnel_params)
         return f"""
         WITH {self.event_query.FUNNEL_PERSONS_ALIAS} AS (
@@ -132,15 +133,10 @@ class ClickhousePaths(Paths):
         return "arraySplit(x -> if(x.3 < %(session_time_threshold)s, 0, 1), paths_tuple)"
 
     def should_query_funnel(self) -> bool:
-        if self._filter.funnel_paths and self._funnel_filter:
-            return True
-        return False
+        return bool(self._filter.funnel_paths and self._funnel_filter)
 
     def get_array_compacting_function(self) -> Literal["arrayResize", "arraySlice"]:
-        if self._filter.end_point:
-            return "arrayResize"
-        else:
-            return "arraySlice"
+        return "arrayResize" if self._filter.end_point else "arraySlice"
 
     def get_filtered_path_ordering(self) -> Tuple[str, ...]:
         fields_to_include = ["filtered_path", "filtered_timings"] + [
@@ -148,6 +144,12 @@ class ClickhousePaths(Paths):
         ]
 
         if self._filter.end_point:
-            return tuple([f"arraySlice({field}, (-1) * %(event_in_session_limit)s)" for field in fields_to_include])
+            return tuple(
+                f"arraySlice({field}, (-1) * %(event_in_session_limit)s)"
+                for field in fields_to_include
+            )
         else:
-            return tuple([f"arraySlice({field}, 1, %(event_in_session_limit)s)" for field in fields_to_include])
+            return tuple(
+                f"arraySlice({field}, 1, %(event_in_session_limit)s)"
+                for field in fields_to_include
+            )

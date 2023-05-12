@@ -24,7 +24,9 @@ class HookSerializer(serializers.ModelSerializer):
 
     def validate_target(self, target):
         if not valid_domain(target):
-            raise exceptions.ValidationError(detail=f"'hooks.zapier.com' is the only allowed target domain")
+            raise exceptions.ValidationError(
+                detail="'hooks.zapier.com' is the only allowed target domain"
+            )
         return target
 
 

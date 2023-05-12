@@ -67,7 +67,7 @@ def start_async_migration(
     ):
         process_error(
             migration_instance,
-            f"Migration is not available on this PostHog version",
+            "Migration is not available on this PostHog version",
             status=MigrationStatus.FailedAtStartup,
             rollback=False,
         )
@@ -79,7 +79,7 @@ def start_async_migration(
         except LookupError:
             process_error(
                 migration_instance,
-                f"Migration definition not available",
+                "Migration definition not available",
                 status=MigrationStatus.FailedAtStartup,
                 rollback=False,
             )

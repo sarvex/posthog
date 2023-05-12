@@ -80,6 +80,4 @@ def get_kafka_message(topic: str, partition: int, offset: int) -> KafkaConsumerR
     consumer.assign([TopicPartition(topic, partition)])
     consumer.seek(partition=TopicPartition(topic, partition), offset=offset)
 
-    message = next(consumer)
-
-    return message
+    return next(consumer)

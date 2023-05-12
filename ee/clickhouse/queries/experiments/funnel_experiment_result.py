@@ -147,7 +147,7 @@ class ClickhouseFunnelExperimentResult:
         if len(test_variants) >= 10:
             raise ValidationError("Can't calculate A/B test results for more than 10 variants", code="too_much_data")
 
-        if len(test_variants) < 1:
+        if not test_variants:
             raise ValidationError("Can't calculate A/B test results for less than 2 variants", code="no_data")
 
         return calculate_probability_of_winning_for_each([control_variant, *test_variants])
@@ -216,11 +216,11 @@ def calculate_expected_loss(target_variant: Variant, variants: List[Variant]) ->
         target_variant.success_count + prior_success, target_variant.failure_count + prior_failure, simulations_count
     )
 
-    loss = 0
     variant_conversions = list(zip(*variant_samples))
-    for i in range(simulations_count):
-        loss += max(0, max(variant_conversions[i]) - target_variant_samples[i])
-
+    loss = sum(
+        max(0, max(variant_conversions[i]) - target_variant_samples[i])
+        for i in range(simulations_count)
+    )
     return loss / simulations_count
 
 
@@ -243,12 +243,12 @@ def simulate_winning_variant_for_conversion(target_variant: Variant, variants: L
         target_variant.success_count + prior_success, target_variant.failure_count + prior_failure, simulations_count
     )
 
-    winnings = 0
     variant_conversions = list(zip(*variant_samples))
-    for i in range(simulations_count):
-        if target_variant_samples[i] > max(variant_conversions[i]):
-            winnings += 1
-
+    winnings = sum(
+        1
+        for i in range(simulations_count)
+        if target_variant_samples[i] > max(variant_conversions[i])
+    )
     return winnings / simulations_count
 
 
@@ -259,11 +259,12 @@ def calculate_probability_of_winning_for_each(variants: List[Variant]) -> List[P
     if len(variants) > 10:
         raise ValidationError("Can't calculate A/B test results for more than 10 variants", code="too_much_data")
 
-    probabilities = []
-    # simulate winning for each test variant
-    for index, variant in enumerate(variants):
-        probabilities.append(simulate_winning_variant_for_conversion(variant, variants[:index] + variants[index + 1 :]))
-
+    probabilities = [
+        simulate_winning_variant_for_conversion(
+            variant, variants[:index] + variants[index + 1 :]
+        )
+        for index, variant in enumerate(variants)
+    ]
     total_test_probabilities = sum(probabilities[1:])
 
     return [max(0, 1 - total_test_probabilities), *probabilities[1:]]

@@ -44,11 +44,15 @@ def verify_email_or_login(request: HttpRequest, user: User) -> None:
 
 def get_verification_redirect_url(uuid: str, distinct_id: str, email: str) -> str:
     require_verification_feature = posthoganalytics.get_feature_flag(
-        "require-email-verification", str(distinct_id), person_properties={"email": email}
+        "require-email-verification",
+        distinct_id,
+        person_properties={"email": email},
     )
     return (
-        "/verify_email/" + uuid
-        if is_email_available() and require_verification_feature == "test" and not settings.DEMO
+        f"/verify_email/{uuid}"
+        if is_email_available()
+        and require_verification_feature == "test"
+        and not settings.DEMO
         else "/"
     )
 
@@ -321,7 +325,12 @@ class SocialSignupSerializer(serializers.Serializer):
 
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        logger.info(f"social_create_user_signup", full_name_len=len(first_name), email_len=len(email), user=user.id)
+        logger.info(
+            "social_create_user_signup",
+            full_name_len=len(first_name),
+            email_len=len(email),
+            user=user.id,
+        )
 
         return {"continue_url": reverse("social:complete", args=[request.session["backend"]])}
 
@@ -341,7 +350,7 @@ class TeamInviteSurrogate:
         team = Team.objects.select_related("organization").get(signup_token=signup_token)
         self.organization = team.organization
 
-    def validate(*args, **kwargs) -> bool:
+    def validate(self, **kwargs) -> bool:
         return True
 
     def use(self, user: Any, *args, **kwargs) -> None:
@@ -384,14 +393,17 @@ def process_social_domain_jit_provisioning_signup(
     # Check if the user is on a whitelisted domain
     domain = email.split("@")[-1]
     try:
-        logger.info(f"process_social_domain_jit_provisioning_signup", domain=domain)
+        logger.info("process_social_domain_jit_provisioning_signup", domain=domain)
         domain_instance = OrganizationDomain.objects.get(domain=domain)
     except OrganizationDomain.DoesNotExist:
-        logger.info(f"process_social_domain_jit_provisioning_signup_domain_does_not_exist", domain=domain)
+        logger.info(
+            "process_social_domain_jit_provisioning_signup_domain_does_not_exist",
+            domain=domain,
+        )
         return user
     else:
         logger.info(
-            f"process_social_domain_jit_provisioning_signup_domain_exists",
+            "process_social_domain_jit_provisioning_signup_domain_exists",
             domain=domain,
             is_verified=domain_instance.is_verified,
             jit_provisioning_enabled=domain_instance.jit_provisioning_enabled,
@@ -406,7 +418,7 @@ def process_social_domain_jit_provisioning_signup(
                     is_email_verified=True,
                 )
                 logger.info(
-                    f"process_social_domain_jit_provisioning_join_complete",
+                    "process_social_domain_jit_provisioning_join_complete",
                     domain=domain,
                     user=user.email,
                     organization=domain_instance.organization_id,
@@ -414,7 +426,7 @@ def process_social_domain_jit_provisioning_signup(
             if not user.organizations.filter(pk=domain_instance.organization_id).exists():
                 user.join(organization=domain_instance.organization)
                 logger.info(
-                    f"process_social_domain_jit_provisioning_join_existing",
+                    "process_social_domain_jit_provisioning_join_existing",
                     domain=domain,
                     user=user.email,
                     organization=domain_instance.organization_id,
@@ -428,9 +440,9 @@ def social_create_user(
     strategy: DjangoStrategy, details, backend, request, user: Union[User, None] = None, *args, **kwargs
 ):
     if user:
-        logger.info(f"social_create_user_is_not_new")
+        logger.info("social_create_user_is_not_new")
         if not user.is_email_verified and user.password is not None:
-            logger.info(f"social_create_user_is_not_new_unverified_has_password")
+            logger.info("social_create_user_is_not_new_unverified_has_password")
             user.set_unusable_password()
             user.is_email_verified = True
             user.save()
@@ -455,7 +467,11 @@ def social_create_user(
             {missing_attr: "This field is required and was not provided by the IdP."}, code="required"
         )
 
-    logger.info(f"social_create_user", full_name_len=len(full_name), email_len=len(email))
+    logger.info(
+        "social_create_user",
+        full_name_len=len(full_name),
+        email_len=len(email),
+    )
 
     if invite_id:
         from_invite = True
@@ -465,7 +481,7 @@ def social_create_user(
         # JIT Provisioning?
         user = process_social_domain_jit_provisioning_signup(email, full_name)
         logger.info(
-            f"social_create_user_jit_user",
+            "social_create_user_jit_user",
             full_name_len=len(full_name),
             email_len=len(email),
             user=user.id if user else None,
@@ -475,7 +491,11 @@ def social_create_user(
             from_invite = True  # jit_provisioning means they're definitely not organization_first_user
 
         if not user:
-            logger.info(f"social_create_user_jit_failed", full_name_len=len(full_name), email_len=len(email))
+            logger.info(
+                "social_create_user_jit_failed",
+                full_name_len=len(full_name),
+                email_len=len(email),
+            )
 
             if not get_can_create_org(request.user):
                 if email and OrganizationDomain.objects.get_verified_for_email_address(email):

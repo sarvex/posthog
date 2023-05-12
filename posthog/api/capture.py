@@ -181,7 +181,7 @@ def _get_sent_at(data, request) -> Tuple[Optional[datetime], Any]:
         return parser.isoparse(sent_at), None
     except Exception as error:
         statsd.incr("capture_endpoint_invalid_sent_at")
-        logger.exception(f"Invalid sent_at value", error=error)
+        logger.exception("Invalid sent_at value", error=error)
         return (
             None,
             cors_response(
@@ -202,9 +202,7 @@ def _check_token_shape(token: Any) -> Optional[str]:
         return "too_long"
     if not token.isascii():  # Legacy tokens were base64, so let's be permissive
         return "not_ascii"
-    if token.startswith("phx_"):  # Used by previous versions of the zapier integration, can happen on user error
-        return "personal_api_key"
-    return None
+    return "personal_api_key" if token.startswith("phx_") else None
 
 
 def get_distinct_id(data: Dict[str, Any]) -> str:
@@ -225,25 +223,29 @@ def get_distinct_id(data: Dict[str, Any]) -> str:
     if not raw_value:
         statsd.incr("invalid_event", tags={"error": "invalid_distinct_id"})
         raise ValueError('Event field "distinct_id" should not be blank!')
-    return str(raw_value)[0:200]
+    return str(raw_value)[:200]
 
 
 def _ensure_web_feature_flags_in_properties(
     event: Dict[str, Any], ingestion_context: EventIngestionContext, distinct_id: str
 ):
     """If the event comes from web, ensure that it contains property $active_feature_flags."""
-    if event["properties"].get("$lib") == "web" and "$active_feature_flags" not in event["properties"]:
-        statsd.incr("active_feature_flags_missing")
-        all_flags, _, _, _ = get_all_feature_flags(team_id=ingestion_context.team_id, distinct_id=distinct_id)
-        active_flags = {key: value for key, value in all_flags.items() if value}
-        flag_keys = list(active_flags.keys())
-        event["properties"]["$active_feature_flags"] = flag_keys
+    if (
+        event["properties"].get("$lib") != "web"
+        or "$active_feature_flags" in event["properties"]
+    ):
+        return
+    statsd.incr("active_feature_flags_missing")
+    all_flags, _, _, _ = get_all_feature_flags(team_id=ingestion_context.team_id, distinct_id=distinct_id)
+    active_flags = {key: value for key, value in all_flags.items() if value}
+    flag_keys = list(active_flags.keys())
+    event["properties"]["$active_feature_flags"] = flag_keys
 
-        if len(flag_keys) > 0:
-            statsd.incr("active_feature_flags_added")
+    if flag_keys:
+        statsd.incr("active_feature_flags_added")
 
-            for k, v in active_flags.items():
-                event["properties"][f"$feature/{k}"] = v
+        for k, v in active_flags.items():
+            event["properties"][f"$feature/{k}"] = v
 
 
 def drop_events_over_quota(
@@ -359,11 +361,7 @@ def get_event(request):
             elif "engage" in request.path_info:  # JS identify call
                 data["event"] = "$identify"  # make sure it has an event name
 
-        if isinstance(data, list):
-            events = data
-        else:
-            events = [data]
-
+        events = data if isinstance(data, list) else [data]
         try:
             events = drop_events_over_quota(token, events, ingestion_context)
         except Exception as e:
@@ -470,8 +468,7 @@ def validate_events(
     for event in events:
         event_uuid = UUIDT()
         distinct_id = get_distinct_id(event)
-        payload_uuid = event.get("uuid", None)
-        if payload_uuid:
+        if payload_uuid := event.get("uuid", None):
             if UUIDT.is_valid_uuid(payload_uuid):
                 event_uuid = UUIDT(uuid_str=payload_uuid)
             else:

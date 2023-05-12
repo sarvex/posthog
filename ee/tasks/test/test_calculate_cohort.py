@@ -149,14 +149,10 @@ class TestClickhouseCalculateCohort(ClickhouseTestMixin, calculate_cohort_test_f
             1,
             {
                 "a": sync_execute(
-                    "select person_id from person_static_cohort where team_id = {} and cohort_id = {} ".format(
-                        self.team.id, cohort.pk
-                    )
+                    f"select person_id from person_static_cohort where team_id = {self.team.id} and cohort_id = {cohort.pk} "
                 ),
                 "b": sync_execute(
-                    "select person_id from person_static_cohort FINAL where team_id = {} and cohort_id = {} ".format(
-                        self.team.id, cohort.pk
-                    )
+                    f"select person_id from person_static_cohort FINAL where team_id = {self.team.id} and cohort_id = {cohort.pk} "
                 ),
             },
         )
@@ -253,14 +249,10 @@ class TestClickhouseCalculateCohort(ClickhouseTestMixin, calculate_cohort_test_f
             1,
             {
                 "a": sync_execute(
-                    "select person_id from person_static_cohort where team_id = {} and cohort_id = {} ".format(
-                        self.team.id, cohort.pk
-                    )
+                    f"select person_id from person_static_cohort where team_id = {self.team.id} and cohort_id = {cohort.pk} "
                 ),
                 "b": sync_execute(
-                    "select person_id from person_static_cohort FINAL where team_id = {} and cohort_id = {} ".format(
-                        self.team.id, cohort.pk
-                    )
+                    f"select person_id from person_static_cohort FINAL where team_id = {self.team.id} and cohort_id = {cohort.pk} "
                 ),
             },
         )

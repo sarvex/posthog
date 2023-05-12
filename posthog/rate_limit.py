@@ -112,8 +112,7 @@ class TeamRateThrottle(SimpleRateThrottle):
         ident = None
         if request.user.is_authenticated:
             try:
-                team_id = self.safely_get_team_id_from_view(view)
-                if team_id:
+                if team_id := self.safely_get_team_id_from_view(view):
                     ident = team_id
                 else:
                     ident = request.user.pk

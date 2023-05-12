@@ -129,7 +129,7 @@ def execute_op_postgres(sql: str, query_id: str):
 
     try:
         with connection.cursor() as cursor:
-            cursor.execute(f"/* {query_id} */ " + sql)
+            cursor.execute(f"/* {query_id} */ {sql}")
     except Exception as e:
         raise Exception(f"Failed to execute postgres op: sql={sql},\nquery_id={query_id},\nexception={str(e)}")
 
@@ -208,13 +208,12 @@ def process_error(
         },
     )
 
-    if alert:
-        if async_migrations_emails_enabled():
-            from posthog.tasks.email import send_async_migration_errored_email
+    if alert and async_migrations_emails_enabled():
+        from posthog.tasks.email import send_async_migration_errored_email
 
-            send_async_migration_errored_email.delay(
-                migration_key=migration_instance.name, time=now().isoformat(), error=error
-            )
+        send_async_migration_errored_email.delay(
+            migration_key=migration_instance.name, time=now().isoformat(), error=error
+        )
 
     if (
         not rollback
@@ -250,9 +249,11 @@ def force_stop_migration(
     2. Our Celery tasks are not essential for the functioning of PostHog, meaning losing a task is not the end of the world
     """
     # Shortcut if we are still in starting state
-    if migration_instance.status == MigrationStatus.Starting:
-        if halt_starting_migration(migration_instance):
-            return
+    if (
+        migration_instance.status == MigrationStatus.Starting
+        and halt_starting_migration(migration_instance)
+    ):
+        return
 
     app.control.revoke(migration_instance.celery_task_id, terminate=True)
     process_error(migration_instance, error, rollback=rollback)
@@ -288,8 +289,9 @@ def complete_migration(migration_instance: AsyncMigration, email: bool = True):
             )
 
     if get_instance_setting("AUTO_START_ASYNC_MIGRATIONS"):
-        next_migration = DEPENDENCY_TO_ASYNC_MIGRATION.get(migration_instance.name)
-        if next_migration:
+        if next_migration := DEPENDENCY_TO_ASYNC_MIGRATION.get(
+            migration_instance.name
+        ):
             from posthog.async_migrations.runner import run_next_migration
 
             run_next_migration(next_migration)

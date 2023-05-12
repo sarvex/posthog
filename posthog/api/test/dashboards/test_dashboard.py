@@ -238,7 +238,9 @@ class TestDashboard(APIBaseTest, QueryMatchingTest):
     def test_listing_dashboards_does_not_include_tiles(self) -> None:
         dashboard_one_id, _ = self.dashboard_api.create_dashboard({"name": "dashboard-1"})
         dashboard_two_id, _ = self.dashboard_api.create_dashboard({"name": "dashboard-2"})
-        self.dashboard_api.create_insight({"dashboards": [dashboard_two_id, dashboard_one_id], "name": f"insight"})
+        self.dashboard_api.create_insight(
+            {"dashboards": [dashboard_two_id, dashboard_one_id], "name": "insight"}
+        )
 
         assert len(self.dashboard_api.get_dashboard(dashboard_one_id)["tiles"]) == 1
         assert len(self.dashboard_api.get_dashboard(dashboard_two_id)["tiles"]) == 1
@@ -261,10 +263,18 @@ class TestDashboard(APIBaseTest, QueryMatchingTest):
         """
         dashboard_one_id, _ = self.dashboard_api.create_dashboard({"name": "dashboard-1"})
         dashboard_two_id, _ = self.dashboard_api.create_dashboard({"name": "dashboard-2"})
-        self.dashboard_api.create_insight({"dashboards": [dashboard_two_id, dashboard_one_id], "name": f"insight"})
-        self.dashboard_api.create_insight({"dashboards": [dashboard_one_id], "name": f"insight"})
-        self.dashboard_api.create_insight({"dashboards": [dashboard_one_id], "name": f"insight"})
-        self.dashboard_api.create_insight({"dashboards": [dashboard_one_id], "name": f"insight"})
+        self.dashboard_api.create_insight(
+            {"dashboards": [dashboard_two_id, dashboard_one_id], "name": "insight"}
+        )
+        self.dashboard_api.create_insight(
+            {"dashboards": [dashboard_one_id], "name": "insight"}
+        )
+        self.dashboard_api.create_insight(
+            {"dashboards": [dashboard_one_id], "name": "insight"}
+        )
+        self.dashboard_api.create_insight(
+            {"dashboards": [dashboard_one_id], "name": "insight"}
+        )
 
         # so DB has 5 tiles, but we only load need to 1
         self.dashboard_api.get_dashboard(dashboard_one_id)
@@ -917,7 +927,7 @@ class TestDashboard(APIBaseTest, QueryMatchingTest):
         assert insight_one_json["dashboards"] == [other_dashboard_id]
         assert insight_one_json["deleted"] is False
         insight_two_json = self.dashboard_api.get_insight(insight_id=insight_two_id)
-        assert [t["dashboard_id"] for t in insight_two_json["dashboard_tiles"]] == []
+        assert not [t["dashboard_id"] for t in insight_two_json["dashboard_tiles"]]
         assert insight_two_json["dashboards"] == []
         assert insight_two_json["deleted"] is False
 

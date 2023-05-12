@@ -41,14 +41,15 @@ def get_stickiness_people_ok(client: Client, team_id: int, request: Dict[str, An
 def get_time_series_ok(data):
     res = {}
     for item in data["result"]:
-        collect_dates = {}
-        for idx, date in enumerate(item["days"]):
-            collect_dates[date] = NormalizedTrendResult(
+        collect_dates = {
+            date: NormalizedTrendResult(
                 value=item["data"][idx],
                 label=item["labels"][idx],
                 person_url=item["persons_urls"][idx]["url"],
                 breakdown_value=item.get("breakdown_value", None),
             )
+            for idx, date in enumerate(item["days"])
+        }
         res[item["label"]] = collect_dates
     return res
 

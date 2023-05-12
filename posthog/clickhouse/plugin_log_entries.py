@@ -37,11 +37,13 @@ SETTINGS index_granularity=512
     ttl_period=ttl_period("timestamp", PLUGIN_LOG_ENTRIES_TTL_WEEKS),
 )
 
-KAFKA_PLUGIN_LOG_ENTRIES_TABLE_SQL = lambda: PLUGIN_LOG_ENTRIES_TABLE_BASE_SQL.format(
-    table_name="kafka_" + PLUGIN_LOG_ENTRIES_TABLE,
-    cluster=CLICKHOUSE_CLUSTER,
-    engine=kafka_engine(topic=KAFKA_PLUGIN_LOG_ENTRIES),
-    extra_fields="",
+KAFKA_PLUGIN_LOG_ENTRIES_TABLE_SQL = (
+    lambda: PLUGIN_LOG_ENTRIES_TABLE_BASE_SQL.format(
+        table_name=f"kafka_{PLUGIN_LOG_ENTRIES_TABLE}",
+        cluster=CLICKHOUSE_CLUSTER,
+        engine=kafka_engine(topic=KAFKA_PLUGIN_LOG_ENTRIES),
+        extra_fields="",
+    )
 )
 
 PLUGIN_LOG_ENTRIES_TABLE_MV_SQL = """

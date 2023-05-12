@@ -118,8 +118,7 @@ class QuerySchemaParser(JSONParser):
     def parse(self, stream, media_type=None, parser_context=None):
         data = super(QuerySchemaParser, self).parse(stream, media_type, parser_context)
         try:
-            query = data.get("query", None)
-            if query:
+            if query := data.get("query", None):
                 schema.Model.parse_obj(query)
         except Exception as error:
             raise ParseError(detail=str(error))
@@ -368,8 +367,9 @@ class InsightSerializer(InsightBasicSerializer, UserPermissionsSerializerMixin):
             )
 
     def _synthetic_dashboard_changes(self, dashboards_before_change: List[Dict]) -> List[Change]:
-        artificial_dashboard_changes = self.context.get("after_dashboard_changes", [])
-        if artificial_dashboard_changes:
+        if artificial_dashboard_changes := self.context.get(
+            "after_dashboard_changes", []
+        ):
             return [
                 Change(
                     type="Insight",
@@ -477,9 +477,12 @@ class InsightSerializer(InsightBasicSerializer, UserPermissionsSerializerMixin):
         target = insight if dashboard is None else dashboard_tile
 
         refresh_insight_now, refresh_frequency = should_refresh_insight(insight, dashboard_tile)
-        if insight.filters and refresh_requested_by_client(self.context["request"]):
-            if refresh_insight_now:
-                return synchronously_update_cache(insight, dashboard, refresh_frequency)
+        if (
+            insight.filters
+            and refresh_requested_by_client(self.context["request"])
+            and refresh_insight_now
+        ):
+            return synchronously_update_cache(insight, dashboard, refresh_frequency)
 
         # :TODO: Clear up if tile can be null or not
         return fetch_cached_insight_result(target or insight, refresh_frequency)
@@ -530,7 +533,7 @@ class InsightViewSet(
 
     def get_serializer_class(self) -> Type[serializers.BaseSerializer]:
 
-        if (self.action == "list" or self.action == "retrieve") and str_to_bool(
+        if self.action in ["list", "retrieve"] and str_to_bool(
             self.request.query_params.get("basic", "0")
         ):
             return InsightBasicSerializer
@@ -568,8 +571,7 @@ class InsightViewSet(
             if self.request.query_params.get("include_query_insights", "false").lower() != "true":
                 queryset = queryset.exclude(Q(filters={}) & Q(query__isnull=False))
 
-        order = self.request.GET.get("order", None)
-        if order:
+        if order := self.request.GET.get("order", None):
             queryset = queryset.order_by(order)
         else:
             queryset = queryset.order_by("order")
@@ -629,8 +631,7 @@ class InsightViewSet(
                     | Q(description__icontains=request.GET["search"])
                 )
             elif key == "dashboards":
-                dashboards_filter = request.GET["dashboards"]
-                if dashboards_filter:
+                if dashboards_filter := request.GET["dashboards"]:
                     dashboards_ids = json.loads(dashboards_filter)
                     for dashboard_id in dashboards_ids:
                         # filter by dashboards one at a time so the filter is AND not OR
@@ -748,7 +749,10 @@ Using the correct cache and enriching the response with dashboard specific confi
             renderer.header = csvexport[0].keys()
             export = renderer.render(csvexport)
             if request.GET.get("export_insight_id"):
-                export = "{}/insights/{}/\n".format(SITE_URL, request.GET["export_insight_id"]).encode() + export
+                export = (
+                    f'{SITE_URL}/insights/{request.GET["export_insight_id"]}/\n'.encode()
+                    + export
+                )
 
             response = HttpResponse(export)
             response[
@@ -851,7 +855,7 @@ Using the correct cache and enriching the response with dashboard specific confi
         team = self.team
         data = {}
         if not request.GET.get("date_from"):
-            data.update({"date_from": "-11d"})
+            data["date_from"] = "-11d"
         filter = RetentionFilter(data=data, request=request, team=self.team)
         base_uri = request.build_absolute_uri("/")
         result = self.retention_query_class(base_uri=base_uri).run(filter, team)
@@ -875,8 +879,9 @@ Using the correct cache and enriching the response with dashboard specific confi
         filter = PathFilter(request=request, data={"insight": INSIGHT_PATHS}, team=self.team)
 
         funnel_filter = None
-        funnel_filter_data = request.GET.get("funnel_filter") or request.data.get("funnel_filter")
-        if funnel_filter_data:
+        if funnel_filter_data := request.GET.get(
+            "funnel_filter"
+        ) or request.data.get("funnel_filter"):
             if isinstance(funnel_filter_data, str):
                 funnel_filter_data = json.loads(funnel_filter_data)
             funnel_filter = Filter(data={"insight": INSIGHT_FUNNELS, **funnel_filter_data}, team=self.team)

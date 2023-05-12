@@ -159,7 +159,7 @@ class TestSessionRecordingPlaylist(APILicensedTest):
         ).json()
         assert len(result["results"]) == 2
         assert {x["id"] for x in result["results"]} == {"session1", "session2"}
-        assert {x["pinned_count"] for x in result["results"]} == {1, 1}
+        assert {x["pinned_count"] for x in result["results"]} == {1}
 
     def test_fetch_playlist_recordings(self):
 

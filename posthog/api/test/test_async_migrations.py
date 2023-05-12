@@ -29,13 +29,13 @@ class TestAsyncMigration(APIBaseTest):
 
     def test_get_async_migrations_without_staff_status(self):
 
-        response = self.client.get(f"/api/async_migrations/").json()
+        response = self.client.get("/api/async_migrations/").json()
         self.assertEqual(response["count"], 0)
 
         self.user.is_staff = False
         self.user.save()
 
-        response = self.client.get(f"/api/async_migrations/").json()
+        response = self.client.get("/api/async_migrations/").json()
 
         self.assertEqual(response["code"], "permission_denied")
         self.assertEqual(response["detail"], "You are not a staff user, contact your instance admin.")
@@ -44,7 +44,7 @@ class TestAsyncMigration(APIBaseTest):
         create_async_migration(name="0002_events_sample_by")
         create_async_migration(name="0003_fill_person_distinct_id2")
 
-        response = self.client.get(f"/api/async_migrations/").json()
+        response = self.client.get("/api/async_migrations/").json()
 
         self.assertEqual(len(response["results"]), 2)
         self.assertEqual(response["results"][0]["name"], "0002_events_sample_by")

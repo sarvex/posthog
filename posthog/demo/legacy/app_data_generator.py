@@ -81,15 +81,23 @@ class AppDataGenerator(DataGenerator):
             self.add_event(
                 event="$pageview",
                 distinct_id=distinct_id,
-                timestamp=now() - relativedelta(days=start_day) + relativedelta(seconds=15),
-                properties={"$current_url": "https://hogflix/" + random.choice(SCREEN_OPTIONS)},
+                timestamp=now()
+                - relativedelta(days=start_day)
+                + relativedelta(seconds=15),
+                properties={
+                    "$current_url": f"https://hogflix/{random.choice(SCREEN_OPTIONS)}"
+                },
             )
             if random.randint(0, 10) <= 8:
                 self.add_event(
                     event="$pageview",
                     distinct_id=distinct_id,
-                    timestamp=now() - relativedelta(days=start_day) + relativedelta(seconds=30),
-                    properties={"$current_url": "https://hogflix/" + random.choice(SCREEN_OPTIONS)},
+                    timestamp=now()
+                    - relativedelta(days=start_day)
+                    + relativedelta(seconds=30),
+                    properties={
+                        "$current_url": f"https://hogflix/{random.choice(SCREEN_OPTIONS)}"
+                    },
                 )
                 self.add_event(
                     event="rated_app",

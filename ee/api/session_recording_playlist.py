@@ -170,8 +170,7 @@ class SessionRecordingPlaylistViewSet(StructuredViewSetMixin, ForbidDestroyModel
             queryset = queryset.filter(deleted=False)
             queryset = self._filter_request(self.request, queryset)
 
-        order = self.request.GET.get("order", None)
-        if order:
+        if order := self.request.GET.get("order", None):
             queryset = queryset.order_by(order)
         else:
             queryset = queryset.order_by("-last_modified_at")
@@ -235,9 +234,9 @@ class SessionRecordingPlaylistViewSet(StructuredViewSetMixin, ForbidDestroyModel
             return response.Response({"success": True})
 
         if request.method == "DELETE":
-            playlist_item = SessionRecordingPlaylistItem.objects.get(playlist=playlist, recording=session_recording_id)  # type: ignore
-
-            if playlist_item:
+            if playlist_item := SessionRecordingPlaylistItem.objects.get(
+                playlist=playlist, recording=session_recording_id
+            ):
                 playlist_item.delete()
 
             return response.Response({"success": True})

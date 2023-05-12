@@ -181,7 +181,10 @@ class TestCapture(BaseTest):
             },
         }
         with self.assertNumQueries(1):
-            response = self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+            response = self.client.get(
+                f"/e/?data={quote(self._to_json(data))}",
+                HTTP_ORIGIN="https://localhost",
+            )
         self.assertEqual(response.get("access-control-allow-origin"), "https://localhost")
         self.assertDictContainsSubset(
             {
@@ -214,7 +217,10 @@ class TestCapture(BaseTest):
             },
         }
         with self.assertNumQueries(1):
-            response = self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+            response = self.client.get(
+                f"/e/?data={quote(self._to_json(data))}",
+                HTTP_ORIGIN="https://localhost",
+            )
         self.assertEqual(response.get("access-control-allow-origin"), "https://localhost")
         self.assertDictContainsSubset(
             {
@@ -270,7 +276,10 @@ class TestCapture(BaseTest):
             },
         }
 
-        response = self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+        response = self.client.get(
+            f"/e/?data={quote(self._to_json(data))}",
+            HTTP_ORIGIN="https://localhost",
+        )
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
 
     @patch("posthog.kafka_client.client._KafkaProducer.produce")
@@ -278,7 +287,9 @@ class TestCapture(BaseTest):
         data = {"event": "some_event", "properties": {"distinct_id": 2, "token": self.team.api_token}}
 
         self.client.get(
-            "/e/?data=%s" % quote(self._to_json(data)), HTTP_X_FORWARDED_FOR="1.2.3.4", HTTP_ORIGIN="https://localhost"
+            f"/e/?data={quote(self._to_json(data))}",
+            HTTP_X_FORWARDED_FOR="1.2.3.4",
+            HTTP_ORIGIN="https://localhost",
         )
         self.assertDictContainsSubset(
             {
@@ -296,7 +307,7 @@ class TestCapture(BaseTest):
         data = {"event": "some_event", "properties": {"distinct_id": 2, "token": self.team.api_token}}
 
         self.client.get(
-            "/e/?data=%s" % quote(self._to_json(data)),
+            f"/e/?data={quote(self._to_json(data))}",
             HTTP_X_FORWARDED_FOR="2345:0425:2CA1:0000:0000:0567:5673:23b5",
             HTTP_ORIGIN="https://localhost",
         )
@@ -317,7 +328,7 @@ class TestCapture(BaseTest):
         data = {"event": "some_event", "properties": {"distinct_id": 2, "token": self.team.api_token}}
 
         self.client.get(
-            "/e/?data=%s" % quote(self._to_json(data)),
+            f"/e/?data={quote(self._to_json(data))}",
             HTTP_X_FORWARDED_FOR="1.2.3.4:5555",
             HTTP_ORIGIN="https://localhost",
         )
@@ -340,7 +351,9 @@ class TestCapture(BaseTest):
         self.team.save()
 
         self.client.get(
-            "/e/?data=%s" % quote(self._to_json(data)), HTTP_X_FORWARDED_FOR="1.2.3.4", HTTP_ORIGIN="https://localhost"
+            f"/e/?data={quote(self._to_json(data))}",
+            HTTP_X_FORWARDED_FOR="1.2.3.4",
+            HTTP_ORIGIN="https://localhost",
         )
         self.assertDictContainsSubset(
             {"distinct_id": "2", "ip": None, "site_url": "http://testserver", "data": data, "team_id": self.team.pk},
@@ -366,7 +379,10 @@ class TestCapture(BaseTest):
             },
         }
         with freeze_time(timezone.now()):
-            self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+            self.client.get(
+                f"/e/?data={quote(self._to_json(data))}",
+                HTTP_ORIGIN="https://localhost",
+            )
 
         mock_set_tag.assert_has_calls([call("library", "web"), call("library.version", "1.14.1")])
 
@@ -387,7 +403,10 @@ class TestCapture(BaseTest):
             },
         }
         with freeze_time(timezone.now()):
-            self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+            self.client.get(
+                f"/e/?data={quote(self._to_json(data))}",
+                HTTP_ORIGIN="https://localhost",
+            )
 
         mock_set_tag.assert_has_calls([call("library", "unknown"), call("library.version", "unknown")])
 
@@ -410,7 +429,10 @@ class TestCapture(BaseTest):
         now = timezone.now()
         with freeze_time(now):
             with self.assertNumQueries(5):
-                response = self.client.get("/e/?data=%s" % quote(self._to_json(data)), HTTP_ORIGIN="https://localhost")
+                response = self.client.get(
+                    f"/e/?data={quote(self._to_json(data))}",
+                    HTTP_ORIGIN="https://localhost",
+                )
         self.assertEqual(response.get("access-control-allow-origin"), "https://localhost")
         arguments = self._to_arguments(kafka_produce)
         arguments.pop("now")  # can't compare fakedate
@@ -447,7 +469,7 @@ class TestCapture(BaseTest):
                 "timestamp": "2021-04-20T19:11:33.841Z",
             }
         ]
-        response = self.client.get("/e/?data=%s" % quote(self._to_json(data)))
+        response = self.client.get(f"/e/?data={quote(self._to_json(data))}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         arguments = self._to_arguments(kafka_produce)
@@ -981,7 +1003,7 @@ class TestCapture(BaseTest):
         }
 
         self.client.get(
-            "/e/?_=%s&data=%s" % (int(tomorrow_sent_at.timestamp()), quote(self._to_json(data))),
+            f"/e/?_={int(tomorrow_sent_at.timestamp())}&data={quote(self._to_json(data))}",
             content_type="application/json",
             HTTP_ORIGIN="https://localhost",
         )
@@ -1010,7 +1032,7 @@ class TestCapture(BaseTest):
         }
 
         self.client.get(
-            "/e/?_=%s&data=%s" % (int(tomorrow_sent_at.timestamp()), quote(self._to_json(data))),
+            f"/e/?_={int(tomorrow_sent_at.timestamp())}&data={quote(self._to_json(data))}",
             content_type="application/json",
             HTTP_ORIGIN="https://localhost",
         )
@@ -1212,7 +1234,7 @@ class TestCapture(BaseTest):
                 "timestamp": "2021-04-20T19:11:33.841Z",
             }
         ]
-        response = self.client.get("/e/?data=%s" % quote(self._to_json(data)))
+        response = self.client.get(f"/e/?data={quote(self._to_json(data))}")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(
             response.json(),

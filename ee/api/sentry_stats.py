@@ -78,10 +78,11 @@ def get_tagged_issues_stats(
 
         # TODO: Confirm sentry always sends this information
         for item in response:
-            counts[item["id"]] = {"id": item["id"]}
-            counts[item["id"]]["filtered_count"] = item["filtered"]["count"]
-            counts[item["id"]]["total_count"] = item["count"]
-
+            counts[item["id"]] = {
+                "id": item["id"],
+                "filtered_count": item["filtered"]["count"],
+                "total_count": item["count"],
+            }
     return counts
 
 

@@ -46,7 +46,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         cls.organization.save()
 
     def _get_plugin_activity(self, expected_status: int = status.HTTP_200_OK):
-        activity = self.client.get(f"/api/organizations/@current/plugins/activity")
+        activity = self.client.get("/api/organizations/@current/plugins/activity")
         self.assertEqual(activity.status_code, expected_status)
         return activity.json()
 
@@ -272,7 +272,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
 
         plugin_id = response.json()["id"]
 
-        api_url = "/api/organizations/@current/plugins/{}".format(response.json()["id"])
+        api_url = f'/api/organizations/@current/plugins/{response.json()["id"]}'
 
         for level in (Organization.PluginsAccessLevel.NONE, Organization.PluginsAccessLevel.CONFIG):
             self.organization.plugins_access_level = level
@@ -322,7 +322,9 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         OrganizationMembership.objects.create(organization=other_org, user=self.user)
 
         repo_url = "https://github.com/PostHog/helloworldplugin"
-        response = self.client.post(f"/api/organizations/@current/plugins/", {"url": repo_url})
+        response = self.client.post(
+            "/api/organizations/@current/plugins/", {"url": repo_url}
+        )
 
         self.assertEqual(response.status_code, 201)
 
@@ -336,7 +338,10 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
 
     def test_cannot_delete_global_plugin(self, mock_get, mock_reload):
         repo_url = "https://github.com/PostHog/helloworldplugin"
-        response = self.client.post(f"/api/organizations/@current/plugins/", {"url": repo_url, "is_global": True})
+        response = self.client.post(
+            "/api/organizations/@current/plugins/",
+            {"url": repo_url, "is_global": True},
+        )
 
         self.assertEqual(response.status_code, 201)
 
@@ -381,7 +386,9 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         self.assertEqual(PluginSourceFile.objects.filter(filename="index.ts").count(), 1)
         self.assertEqual(mock_reload.call_count, 1)
 
-        self.client.delete("/api/organizations/@current/plugins/{}".format(response.json()["id"]))
+        self.client.delete(
+            f'/api/organizations/@current/plugins/{response.json()["id"]}'
+        )
         self.assertEqual(Plugin.objects.count(), 0)
         self.assertEqual(PluginSourceFile.objects.count(), 0)
         self.assertEqual(mock_reload.call_count, 2)
@@ -423,9 +430,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         response2 = self.client.post(
             "/api/organizations/@current/plugins/",
             {
-                "url": "https://github.com/PostHog/helloworldplugin/commit/{}".format(
-                    HELLO_WORLD_PLUGIN_GITHUB_ATTACHMENT_ZIP[0]
-                )
+                "url": f"https://github.com/PostHog/helloworldplugin/commit/{HELLO_WORLD_PLUGIN_GITHUB_ATTACHMENT_ZIP[0]}"
             },
         )
         self.assertEqual(response2.status_code, 201)
@@ -479,7 +484,9 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         with self.is_cloud(False):
             response = self.client.post(
                 "/api/organizations/@current/plugins/",
-                {"url": f"https://github.com/posthog-plugin/version-greater-than/commit/0.0.0"},
+                {
+                    "url": "https://github.com/posthog-plugin/version-greater-than/commit/0.0.0"
+                },
             )
             self.assertEqual(response.status_code, 201)
 
@@ -521,7 +528,9 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         with self.is_cloud(False):
             response = self.client.post(
                 "/api/organizations/@current/plugins/",
-                {"url": f"https://github.com/posthog-plugin/version-less-than/commit/..."},
+                {
+                    "url": "https://github.com/posthog-plugin/version-less-than/commit/..."
+                },
             )
             self.assertEqual(response.status_code, 400)
             self.assertEqual(
@@ -755,7 +764,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
             self._assert_number_of_when_listed_plugins(3)
 
     def _assert_number_of_when_listed_plugins(self, expected_plugins_count: int) -> None:
-        response_with_none = self.client.get(f"/api/organizations/@current/plugins/")
+        response_with_none = self.client.get("/api/organizations/@current/plugins/")
         self.assertEqual(response_with_none.status_code, 200)
         self.assertEqual(response_with_none.json()["count"], expected_plugins_count, response_with_none.json())
         self.assertEqual(len(response_with_none.json()["results"]), expected_plugins_count, response_with_none.json())
@@ -937,9 +946,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         response = self.client.post(
             "/api/organizations/@current/plugins/",
             {
-                "url": "https://github.com/PostHog/helloworldplugin/commit/{}".format(
-                    HELLO_WORLD_PLUGIN_GITHUB_ATTACHMENT_ZIP[0]
-                )
+                "url": f"https://github.com/PostHog/helloworldplugin/commit/{HELLO_WORLD_PLUGIN_GITHUB_ATTACHMENT_ZIP[0]}"
             },
             format="multipart",
         )
@@ -1058,9 +1065,7 @@ class TestPluginAPI(APIBaseTest, QueryMatchingTest):
         response = self.client.post(
             "/api/organizations/@current/plugins/",
             {
-                "url": "https://github.com/PostHog/helloworldplugin/commit/{}".format(
-                    HELLO_WORLD_PLUGIN_SECRET_GITHUB_ZIP[0]
-                )
+                "url": f"https://github.com/PostHog/helloworldplugin/commit/{HELLO_WORLD_PLUGIN_SECRET_GITHUB_ZIP[0]}"
             },
         )
         self.assertEqual(response.status_code, 201)

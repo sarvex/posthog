@@ -216,7 +216,9 @@ class Migration(AsyncMigrationDefinition):
 
         execute_op_clickhouse(sql, params, query_id=query_id)
 
-        new_highwatermark = (persons[-1].id if len(persons) > 0 else self.pg_copy_target_person_id) + 1
+        new_highwatermark = (
+            persons[-1].id if persons else self.pg_copy_target_person_id
+        ) + 1
         get_client().set(REDIS_HIGHWATERMARK_KEY, new_highwatermark)
         logger.debug(
             "Copied batch of people from postgres to clickhouse",

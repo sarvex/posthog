@@ -558,9 +558,12 @@ class FunnelCorrelationTest(BaseTest):
             _create_event(team=self.team, event="paid", distinct_id=f"user_{i}", timestamp="2020-01-04T14:00:00Z")
 
         # Atleast one person that fails, to ensure we get results
-        _create_person(distinct_ids=[f"user_fail"], team_id=self.team.pk)
+        _create_person(distinct_ids=["user_fail"], team_id=self.team.pk)
         _create_event(
-            team=self.team, event="user signed up", distinct_id=f"user_fail", timestamp="2020-01-02T14:00:00Z"
+            team=self.team,
+            event="user signed up",
+            distinct_id="user_fail",
+            timestamp="2020-01-02T14:00:00Z",
         )
 
         with freeze_time("2020-01-01"):

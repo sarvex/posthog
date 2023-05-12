@@ -255,9 +255,8 @@ class TestSignupAPI(APIBaseTest):
                 "first_name": "Jane",
                 "email": "invalid@posthog.com",
                 "password": "notsecure",
+                attribute: None,
             }
-            body[attribute] = None
-
             response = self.client.post("/api/signup/", body)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, f"{attribute} may not be null")
             self.assertEqual(

@@ -27,14 +27,6 @@ def persist_recording(recording_id: str, team_id: int) -> None:
     logger.info("Persisting recording: init", recording_id=recording_id, team_id=team_id)
 
     start_time = timezone.now()
-    analytics_payload = {
-        "total_time_ms": 0.0,
-        "metadata_load_time_ms": 0.0,
-        "snapshots_load_time_ms": 0.0,
-        "content_size_in_bytes": 0,
-        "compressed_size_in_bytes": 0,
-    }
-
     if not settings.OBJECT_STORAGE_ENABLED:
         return
 
@@ -53,8 +45,14 @@ def persist_recording(recording_id: str, team_id: int) -> None:
 
     recording.load_metadata()
 
-    analytics_payload["metadata_load_time_ms"] = (timezone.now() - start_time).total_seconds() * 1000
-
+    analytics_payload = {
+        "total_time_ms": 0.0,
+        "snapshots_load_time_ms": 0.0,
+        "content_size_in_bytes": 0,
+        "compressed_size_in_bytes": 0,
+        "metadata_load_time_ms": (timezone.now() - start_time).total_seconds()
+        * 1000,
+    }
     if not recording.start_time or timezone.now() < recording.start_time + MINIMUM_AGE_FOR_RECORDING:
         # Recording is too recent to be persisted. We can save the metadata as it is still useful for querying but we can't move to S3 yet.
         logger.info(

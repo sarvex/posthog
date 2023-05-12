@@ -268,7 +268,7 @@ class Migration(AsyncMigrationDefinition):
 
     def _where_clause(self) -> Tuple[str, Dict[str, Union[str, int]]]:
         team_id = self.get_parameter("TEAM_ID")
-        team_id_filter = f" AND team_id = %(team_id)s" if team_id else ""
+        team_id_filter = " AND team_id = %(team_id)s" if team_id else ""
         where_clause = f"WHERE timestamp > toDateTime(%(timestamp_lower_bound)s) AND timestamp < toDateTime(%(timestamp_upper_bound)s) {team_id_filter}"
 
         return (

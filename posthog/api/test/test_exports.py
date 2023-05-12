@@ -223,9 +223,14 @@ class TestExports(APIBaseTest):
     def test_will_error_if_export_contains_other_team_dashboard(self) -> None:
         other_team = Team.objects.create(
             organization=self.organization,
-            api_token=self.CONFIG_API_TOKEN + "2",
+            api_token=f"{self.CONFIG_API_TOKEN}2",
             test_account_filters=[
-                {"key": "email", "value": "@posthog.com", "operator": "not_icontains", "type": "person"}
+                {
+                    "key": "email",
+                    "value": "@posthog.com",
+                    "operator": "not_icontains",
+                    "type": "person",
+                }
             ],
         )
         other_dashboard = Dashboard.objects.create(
@@ -250,9 +255,14 @@ class TestExports(APIBaseTest):
     def test_will_error_if_export_contains_other_team_insight(self) -> None:
         other_team = Team.objects.create(
             organization=self.organization,
-            api_token=self.CONFIG_API_TOKEN + "2",
+            api_token=f"{self.CONFIG_API_TOKEN}2",
             test_account_filters=[
-                {"key": "email", "value": "@posthog.com", "operator": "not_icontains", "type": "person"}
+                {
+                    "key": "email",
+                    "value": "@posthog.com",
+                    "operator": "not_icontains",
+                    "type": "person",
+                }
             ],
         )
         other_insight = Insight.objects.create(

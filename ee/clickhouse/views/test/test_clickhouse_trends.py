@@ -466,44 +466,48 @@ def get_trends_time_series_ok(
     data = get_trends_ok(client=client, request=request, team=team)
     res = {}
     for item in data["result"]:
-        collect_dates = {}
-        for idx, date in enumerate(item["days"]):
-            collect_dates[date] = NormalizedTrendResult(
+        collect_dates = {
+            date: NormalizedTrendResult(
                 value=item["data"][idx],
                 label=item["labels"][idx],
                 person_url=item["persons_urls"][idx]["url"],
                 breakdown_value=item.get("breakdown_value", None),
             )
-        suffix = " - {}".format(item["compare_label"]) if item.get("compare_label") else ""
+            for idx, date in enumerate(item["days"])
+        }
+        suffix = f' - {item["compare_label"]}' if item.get("compare_label") else ""
         if with_order:
-            suffix += " - {}".format(item["action"]["order"]) if item["action"].get("order") is not None else ""
-        res["{}{}".format(item["label"], suffix)] = collect_dates
+            suffix += (
+                f' - {item["action"]["order"]}'
+                if item["action"].get("order") is not None
+                else ""
+            )
+        res[f'{item["label"]}{suffix}'] = collect_dates
 
     return res
 
 
 def get_trends_aggregate_ok(client: Client, request: TrendsRequest, team: Team) -> Dict[str, NormalizedTrendResult]:
     data = get_trends_ok(client=client, request=request, team=team)
-    res = {}
-    for item in data["result"]:
-        res[item["label"]] = NormalizedTrendResult(
+    return {
+        item["label"]: NormalizedTrendResult(
             value=item["aggregated_value"],
             label=item["action"]["name"],
             person_url=item["persons"]["url"],
             breakdown_value=item.get("breakdown_value", None),
         )
-
-    return res
+        for item in data["result"]
+    }
 
 
 def get_trends_people_ok(client: Client, url: str):
-    response = client.get("/" + url)
+    response = client.get(f"/{url}")
     assert response.status_code == 200, response.content
     return response.json()["results"][0]["people"]
 
 
 def get_people_from_url_ok(client: Client, url: str):
-    response = client.get("/" + url)
+    response = client.get(f"/{url}")
     assert response.status_code == 200, response.content
     return response.json()["results"][0]["people"]
 

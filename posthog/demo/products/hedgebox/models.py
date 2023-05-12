@@ -540,10 +540,9 @@ class HedgeboxPerson(SimPerson):
             or random < 0.1
         ):
             self.go_to_account_billing()
-        elif (
-            self.active_session_intent
-            in (HedgeboxSessionIntent.INVITE_TEAM_MEMBER, HedgeboxSessionIntent.REMOVE_TEAM_MEMBER)
-            or random < 0.1
+        elif self.active_session_intent in (
+            HedgeboxSessionIntent.INVITE_TEAM_MEMBER,
+            HedgeboxSessionIntent.REMOVE_TEAM_MEMBER,
         ):
             self.go_to_account_team()
         elif self.session_pageview_counts[URL_FILES] < 4:

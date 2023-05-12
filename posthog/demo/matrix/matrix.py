@@ -98,14 +98,13 @@ class Cluster(ABC):
         x, y = person.x, person.y
         neighbors = []
         for neighbor_x in range(x - 1, x + 2):
-            for neighbor_y in range(y - 1, y + 2):
-                if (
-                    (neighbor_x == x and neighbor_y == y)
-                    or not (0 <= neighbor_x < 1 + self.radius * 2)
-                    or not (0 <= neighbor_y < 1 + self.radius * 2)
-                ):
-                    continue
-                neighbors.append(self.people_matrix[neighbor_y][neighbor_x])
+            neighbors.extend(
+                self.people_matrix[neighbor_y][neighbor_x]
+                for neighbor_y in range(y - 1, y + 2)
+                if (neighbor_x != x or neighbor_y != y)
+                and 0 <= neighbor_x < 1 + self.radius * 2
+                and 0 <= neighbor_y < 1 + self.radius * 2
+            )
         return neighbors
 
     def raw_schedule_effect(self, effect: Effect):

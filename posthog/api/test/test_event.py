@@ -362,7 +362,7 @@ class TestEvents(ClickhouseTestMixin, APIBaseTest):
 
             response = self.client.get(f"/api/projects/{self.team.id}/events/?{params_string}").json()
             self.assertEqual(len(response["results"]), 10)
-            self.assertIn(f"before=", unquote(response["next"]))
+            self.assertIn("before=", unquote(response["next"]))
             self.assertIn(f"after={after}", unquote(response["next"]))
 
             page2 = self.client.get(response["next"]).json()
@@ -377,7 +377,7 @@ class TestEvents(ClickhouseTestMixin, APIBaseTest):
             )
 
             self.assertEqual(len(page2["results"]), 10)
-            self.assertIn(f"before=", unquote(page2["next"]))
+            self.assertIn("before=", unquote(page2["next"]))
             self.assertIn(f"after={after}", unquote(page2["next"]))
 
             page3 = self.client.get(page2["next"]).json()

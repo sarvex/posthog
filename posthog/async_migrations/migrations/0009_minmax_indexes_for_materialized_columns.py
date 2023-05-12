@@ -27,23 +27,29 @@ class Migration(AsyncMigrationDefinition):
 
     def has_missing_index(self, table: TableWithProperties) -> bool:
         table_to_check = "sharded_events" if table == "events" else table
-        indexes = set(
+        indexes = {
             row[0]
             for row in sync_execute(
-                "SELECT name FROM system.data_skipping_indices WHERE table = %(table)s", {"table": table_to_check}
+                "SELECT name FROM system.data_skipping_indices WHERE table = %(table)s",
+                {"table": table_to_check},
             )
-        )
+        }
         return any(f"minmax_{column_name}" not in indexes for column_name in get_materialized_columns(table).values())
 
     @cached_property
     def operations(self):
         operations = []
         for table in TABLES_TO_INDEX:
-            for column_name in get_materialized_columns(table).values():
-                operations.append(
-                    AsyncMigrationOperation(fn=partial(self.attempt_add_materialized_column_index, table, column_name))
+            operations.extend(
+                AsyncMigrationOperation(
+                    fn=partial(
+                        self.attempt_add_materialized_column_index,
+                        table,
+                        column_name,
+                    )
                 )
-
+                for column_name in get_materialized_columns(table).values()
+            )
         return operations
 
     def attempt_add_materialized_column_index(self, table: TableWithProperties, column_name: str, query_id: str):

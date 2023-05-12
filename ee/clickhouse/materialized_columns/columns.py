@@ -151,7 +151,7 @@ def backfill_materialized_columns(
     This will require reading and writing a lot of data on clickhouse disk.
     """
 
-    if len(properties) == 0:
+    if not properties:
         return
 
     updated_table = "sharded_events" if table == "events" else table
@@ -198,7 +198,7 @@ def _materialized_column_name(
 ) -> str:
     "Returns a sanitized and unique column name to use for materialized column"
 
-    prefix = "mat_" if table == "events" or table == "groups" else "pmat_"
+    prefix = "mat_" if table in ["events", "groups"] else "pmat_"
 
     if table_column != DEFAULT_TABLE_COLUMN:
         prefix += f"{SHORT_TABLE_COLUMN_NAME[table_column]}_"
@@ -208,7 +208,7 @@ def _materialized_column_name(
     suffix = ""
 
     while f"{prefix}{property_str}{suffix}" in existing_materialized_columns:
-        suffix = "_" + generate_random_short_suffix()
+        suffix = f"_{generate_random_short_suffix()}"
 
     return f"{prefix}{property_str}{suffix}"
 

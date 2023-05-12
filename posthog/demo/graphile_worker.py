@@ -46,11 +46,15 @@ def bulk_queue_graphile_worker_jobs(jobs: Sequence[GraphileWorkerJob]):
     params: List[Any] = []
     for job in jobs:
         values.append("(%s, %s::json, %s::timestamptz, %s, %s::jsonb)")
-        params.append(job.task_identifier)
-        params.append(json.dumps(job.payload))
-        params.append(job.run_at.isoformat())
-        params.append(job.max_attempts)
-        params.append(json.dumps(job.flags) if job.flags else None)
+        params.extend(
+            (
+                job.task_identifier,
+                json.dumps(job.payload),
+                job.run_at.isoformat(),
+                job.max_attempts,
+                json.dumps(job.flags) if job.flags else None,
+            )
+        )
     _execute_graphile_worker_query(BULK_INSERT_JOBS_SQL.format(values=", ".join(values)), params=params)
 
 

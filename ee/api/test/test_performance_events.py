@@ -11,7 +11,9 @@ from posthog.test.base import APIBaseTest
 
 class TestLicensedPerformanceEvents(APILicensedTest):
     def test_performance_errors_if_missing_date_from_params(self):
-        res = self.client.get(f"/api/projects/@current/performance_events?session_id=1234")
+        res = self.client.get(
+            "/api/projects/@current/performance_events?session_id=1234"
+        )
         assert res.status_code == 400
         assert res.json() == {
             "attr": "date_from",
@@ -22,7 +24,7 @@ class TestLicensedPerformanceEvents(APILicensedTest):
 
     def test_performance_errors_if_missing_session_id_params(self):
         res = self.client.get(
-            f"/api/projects/@current/performance_events?&date_from=2021-01-01T00:00:00Z&date_to=2021-01-02T00:00:00Z"
+            "/api/projects/@current/performance_events?&date_from=2021-01-01T00:00:00Z&date_to=2021-01-02T00:00:00Z"
         )
         assert res.status_code == 400
         assert res.json() == {
@@ -34,11 +36,11 @@ class TestLicensedPerformanceEvents(APILicensedTest):
 
     def test_list_reject_if_date_range_too_long(self):
         res = self.client.get(
-            f"/api/projects/@current/performance_events?session_id=1234&date_from=2021-01-01T00:00:00Z&date_to=2021-01-06T00:00:00Z"
+            "/api/projects/@current/performance_events?session_id=1234&date_from=2021-01-01T00:00:00Z&date_to=2021-01-06T00:00:00Z"
         )
         assert res.status_code == 200
         res = self.client.get(
-            f"/api/projects/@current/performance_events?session_id=1234&date_from=2021-01-01T00:00:00Z&date_to=2021-01-10T00:00:00Z"
+            "/api/projects/@current/performance_events?session_id=1234&date_from=2021-01-01T00:00:00Z&date_to=2021-01-10T00:00:00Z"
         )
         assert res.status_code == 400
         assert res.json() == {
@@ -86,7 +88,12 @@ class TestLicensedPerformanceEvents(APILicensedTest):
             create_performance_event(self.team.id, "user_1", session_id, current_url="https://posthog.com")
             create_performance_event(self.team.id, "user_1", session_id, current_url="https://posthog.com")
             create_performance_event(self.team.id, "user_1", session_id, current_url="https://posthog.com")
-            create_performance_event(self.team.id, "user_2", session_id + "2", current_url="https://posthog.com")
+            create_performance_event(
+                self.team.id,
+                "user_2",
+                f"{session_id}2",
+                current_url="https://posthog.com",
+            )
 
         res = self.client.get(
             f"/api/projects/@current/performance_events?session_id={session_id}&date_from=2022-01-01T00:00:00Z&date_to=2022-01-02T00:00:00Z"
@@ -160,7 +167,9 @@ class TestLicensedPerformanceEvents(APILicensedTest):
 
 class TestUnlicensedPerformanceEvents(APIBaseTest):
     def test_unlicensed_error(self):
-        res = self.client.get(f"/api/projects/@current/performance_events?session_id=123")
+        res = self.client.get(
+            "/api/projects/@current/performance_events?session_id=123"
+        )
         assert res.status_code == 402
         assert res.json() == {
             "attr": None,

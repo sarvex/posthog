@@ -31,18 +31,15 @@ class PremiumMultiorganizationPermissions(permissions.BasePermission):
 
     def has_permission(self, request: Request, view) -> bool:
         user = cast(User, request.user)
-        if (
-            # Make multiple orgs only premium on self-hosted, since enforcement of this wouldn't make sense on Cloud
-            not is_cloud()
-            and request.method in CREATE_METHODS
-            and (
-                user.organization is None
-                or not user.organization.is_feature_available(AvailableFeature.ORGANIZATIONS_PROJECTS)
+        return bool(
+            is_cloud()
+            or request.method not in CREATE_METHODS
+            or user.organization is not None
+            and user.organization.is_feature_available(
+                AvailableFeature.ORGANIZATIONS_PROJECTS
             )
-            and user.organizations.count() >= 1
-        ):
-            return False
-        return True
+            or user.organizations.count() < 1
+        )
 
 
 class OrganizationPermissionsWithDelete(OrganizationAdminWritePermissions):

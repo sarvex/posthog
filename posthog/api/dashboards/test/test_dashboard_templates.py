@@ -270,10 +270,14 @@ class TestDashboardTemplates(APIBaseTest):
         response = self.client.get(f"/api/projects/{self.team.pk}/dashboard_templates/repository")
         assert response.status_code == status.HTTP_200_OK, response
 
-        expected_listing: List[Dict[str, Any]] = []
-        for tl in expected_template_listing_json:
-            expected_listing.append({**tl, "installed": tl["name"] == "Product analytics", "has_new_version": False})
-
+        expected_listing: List[Dict[str, Any]] = [
+            {
+                **tl,
+                "installed": tl["name"] == "Product analytics",
+                "has_new_version": False,
+            }
+            for tl in expected_template_listing_json
+        ]
         assert response.json() == expected_listing
 
     @patch("posthog.api.dashboards.dashboard_templates.requests.get")
@@ -300,10 +304,10 @@ class TestDashboardTemplates(APIBaseTest):
         assert response.status_code == status.HTTP_200_OK, response
         assert len(response.json()) == 2
 
-        expected_listing: List[Dict[str, Any]] = []
-        for tl in expected_template_listing_json:
-            expected_listing.append({**tl, "installed": True, "has_new_version": False})
-
+        expected_listing: List[Dict[str, Any]] = [
+            {**tl, "installed": True, "has_new_version": False}
+            for tl in expected_template_listing_json
+        ]
         assert response.json() == expected_listing
 
     @patch("posthog.api.dashboards.dashboard_templates.requests.get")

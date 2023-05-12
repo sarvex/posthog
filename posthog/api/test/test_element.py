@@ -219,7 +219,7 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
     def test_element_stats_can_load_all_the_data(self) -> None:
         self._setup_events()
 
-        response = self.client.get(f"/api/element/stats/?paginate_response=true")
+        response = self.client.get("/api/element/stats/?paginate_response=true")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_json = response.json()
@@ -231,7 +231,9 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
     def test_element_stats_can_load_only_rageclick_data(self) -> None:
         self._setup_events()
 
-        response = self.client.get(f"/api/element/stats/?paginate_response=true&include=$rageclick")
+        response = self.client.get(
+            "/api/element/stats/?paginate_response=true&include=$rageclick"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_json = response.json()
@@ -244,7 +246,7 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
         self._setup_events()
 
         response = self.client.get(
-            f"/api/element/stats/?paginate_response=true&include=$rageclick&include=$autocapture"
+            "/api/element/stats/?paginate_response=true&include=$rageclick&include=$autocapture"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -257,7 +259,9 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
     def test_element_stats_obeys_limit_parameter(self) -> None:
         self._setup_events()
 
-        response = self.client.get(f"/api/element/stats/?paginate_response=true&limit=1")
+        response = self.client.get(
+            "/api/element/stats/?paginate_response=true&limit=1"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_json = response.json()
@@ -265,7 +269,9 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
         limit_to_one_results = response_json["results"]
         assert limit_to_one_results == [expected_all_data_response_results[0]]
 
-        response = self.client.get(f"/api/element/stats/?paginate_response=true&limit=1&offset=1")
+        response = self.client.get(
+            "/api/element/stats/?paginate_response=true&limit=1&offset=1"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_json = response.json()
@@ -274,15 +280,17 @@ class TestElement(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):
         assert limit_to_one_results == [expected_all_data_response_results[1]]
 
     def test_element_stats_does_not_allow_non_numeric_limit(self) -> None:
-        response = self.client.get(f"/api/element/stats/?limit=not-a-number")
+        response = self.client.get("/api/element/stats/?limit=not-a-number")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_element_stats_does_not_allow_non_numeric_offset(self) -> None:
-        response = self.client.get(f"/api/element/stats/?limit=not-a-number")
+        response = self.client.get("/api/element/stats/?limit=not-a-number")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_element_stats_does_not_allow_unexepcted_include(self) -> None:
-        response = self.client.get(f"/api/element/stats/?include=$autocapture&include=$rageclick&include=$pageview")
+        response = self.client.get(
+            "/api/element/stats/?include=$autocapture&include=$rageclick&include=$pageview"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _setup_events(self):

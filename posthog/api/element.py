@@ -66,7 +66,7 @@ class ElementViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
         query_date_range = QueryDateRange(filter=filter, team=self.team, should_round=True)
         date_from, date_from_params = query_date_range.date_from
         date_to, date_to_params = query_date_range.date_to
-        date_params.update(date_from_params)
+        date_params |= date_from_params
         date_params.update(date_to_params)
 
         try:
@@ -113,13 +113,12 @@ class ElementViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
             for elements in result[:limit]
         ]
 
-        if paginate_response:
-            has_next = len(result) == limit + 1
-            next_url = format_query_params_absolute_url(request, offset + limit) if has_next else None
-            previous_url = format_query_params_absolute_url(request, offset - limit) if offset - limit >= 0 else None
-            return response.Response({"results": serialized_elements, "next": next_url, "previous": previous_url})
-        else:
+        if not paginate_response:
             return response.Response(serialized_elements)
+        has_next = len(result) == limit + 1
+        next_url = format_query_params_absolute_url(request, offset + limit) if has_next else None
+        previous_url = format_query_params_absolute_url(request, offset - limit) if offset - limit >= 0 else None
+        return response.Response({"results": serialized_elements, "next": next_url, "previous": previous_url})
 
     def _events_filter(self, request) -> Tuple[Literal["$autocapture", "$rageclick"], ...]:
         event_to_filter: Tuple[Literal["$autocapture", "$rageclick"], ...] = ()
@@ -135,15 +134,15 @@ class ElementViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
                 events_to_include.remove("$autocapture")
                 event_to_filter += ("$autocapture",)
 
-            if events_to_include:
-                raise ValidationError("Only $autocapture and $rageclick are supported for now.")
+        if events_to_include:
+            raise ValidationError("Only $autocapture and $rageclick are supported for now.")
         return event_to_filter
 
     @action(methods=["GET"], detail=False)
     def values(self, request: request.Request, **kwargs) -> response.Response:
         key = request.GET.get("key")
         value = request.GET.get("value")
-        select_regex = '[:|"]{}="(.*?)"'.format(key)
+        select_regex = f'[:|"]{key}="(.*?)"'
 
         # Make sure key exists, otherwise could lead to sql injection lower down
         if key not in self.serializer_class.Meta.fields:
@@ -153,13 +152,9 @@ class ElementViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
             select_regex = r"^([-_a-zA-Z0-9]*?)[\.|:]"
             filter_regex = select_regex
             if value:
-                filter_regex = r"^([-_a-zA-Z0-9]*?{}[-_a-zA-Z0-9]*?)[\.|:]".format(value)
+                filter_regex = f"^([-_a-zA-Z0-9]*?{value}[-_a-zA-Z0-9]*?)[\.|:]"
         else:
-            if value:
-                filter_regex = '[:|"]{}=".*?{}.*?"'.format(key, value)
-            else:
-                filter_regex = select_regex
-
+            filter_regex = f'[:|"]{key}=".*?{value}.*?"' if value else select_regex
         result = sync_execute(
             GET_VALUES.format(), {"team_id": self.team.id, "regex": select_regex, "filter_regex": filter_regex}
         )

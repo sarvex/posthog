@@ -18,7 +18,10 @@ class EnterpriseColumnOptimizer(FOSSColumnOptimizer):
     @cached_property
     def group_types_to_query(self) -> Set[GroupTypeIndex]:
         used_properties = self.used_properties_with_type("group")
-        return set(cast(GroupTypeIndex, group_type_index) for _, _, group_type_index in used_properties)
+        return {
+            cast(GroupTypeIndex, group_type_index)
+            for _, _, group_type_index in used_properties
+        }
 
     @cached_property
     def group_on_event_columns_to_query(self) -> Set[ColumnName]:
@@ -82,7 +85,7 @@ class EnterpriseColumnOptimizer(FOSSColumnOptimizer):
                 counter[(f"$group_{entity.math_group_type_index}", "event", None)] += 1
 
             if entity.math == "unique_session":
-                counter[(f"$session_id", "event", None)] += 1
+                counter["$session_id", "event", None] += 1
 
             # :TRICKY: If action contains property filters, these need to be included
             #
@@ -96,11 +99,10 @@ class EnterpriseColumnOptimizer(FOSSColumnOptimizer):
             and self.filter.correlation_property_names
         ):
 
-            if self.filter.aggregation_group_type_index is not None:
-                for prop_value in self.filter.correlation_property_names:
+            for prop_value in self.filter.correlation_property_names:
+                if self.filter.aggregation_group_type_index is not None:
                     counter[(prop_value, "group", self.filter.aggregation_group_type_index)] += 1
-            else:
-                for prop_value in self.filter.correlation_property_names:
+                else:
                     counter[(prop_value, "person", None)] += 1
 
         return counter

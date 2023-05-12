@@ -31,11 +31,8 @@ def create_performance_event(
         "timestamp": timestamp_str,
         "entry_type": entry_type,
         "name": "https://posthog.com/static/js/1.0.0/PostHog.js",
-    }
-
-    data.update(kwargs)
-
-    selects = [f"%({x})s" for x in data.keys()]
+    } | kwargs
+    selects = [f"%({x})s" for x in data]
     sql = f"""
 INSERT INTO {PERFORMANCE_EVENT_DATA_TABLE()} ({', '.join(data.keys()) }, _timestamp, _offset)
 SELECT {', '.join(selects) }, now(), 0

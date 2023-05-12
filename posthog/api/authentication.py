@@ -42,8 +42,7 @@ def logout(request):
         restore_original_login(request)
         return redirect("/admin/")
 
-    response = auth_views.logout_then_login(request)
-    return response
+    return auth_views.logout_then_login(request)
 
 
 def axes_locked_out(*args, **kwargs):
@@ -66,10 +65,10 @@ def sso_login(request: HttpRequest, backend: str) -> HttpResponse:
     sso_providers["saml"] = settings.EE_AVAILABLE
 
     if backend not in sso_providers:
-        return redirect(f"/login?error_code=invalid_sso_provider")
+        return redirect("/login?error_code=invalid_sso_provider")
 
     if not sso_providers[backend]:
-        return redirect(f"/login?error_code=improperly_configured_sso")
+        return redirect("/login?error_code=improperly_configured_sso")
 
     return auth(request, backend)
 
@@ -93,18 +92,23 @@ class LoginSerializer(serializers.Serializer):
             return False
         # If user has a valid 2FA cookie, use that instead of showing them the 2FA screen
         for key, value in self.context["request"].COOKIES.items():
-            if key.startswith(REMEMBER_COOKIE_PREFIX) and value:
-                if validate_remember_device_cookie(value, user=user, otp_device_id=device.persistent_id):
-                    user.otp_device = device  # type: ignore
-                    device.throttle_reset()
-                    return False
+            if (
+                key.startswith(REMEMBER_COOKIE_PREFIX)
+                and value
+                and validate_remember_device_cookie(
+                    value, user=user, otp_device_id=device.persistent_id
+                )
+            ):
+                user.otp_device = device  # type: ignore
+                device.throttle_reset()
+                return False
         return True
 
     def create(self, validated_data: Dict[str, str]) -> Any:
 
-        # Check SSO enforcement (which happens at the domain level)
-        sso_enforcement = OrganizationDomain.objects.get_sso_enforcement_for_email_address(validated_data["email"])
-        if sso_enforcement:
+        if sso_enforcement := OrganizationDomain.objects.get_sso_enforcement_for_email_address(
+            validated_data["email"]
+        ):
             raise serializers.ValidationError(
                 f"You can only login with SSO for this account ({sso_enforcement}).", code="sso_enforced"
             )

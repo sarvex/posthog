@@ -102,11 +102,10 @@ def upsert(
         cache_key=cache_key,
         target_cache_age_seconds=target_cache_age_seconds,
     )
-    if execute:
-        _execute_insert([model])
-        return None
-    else:
+    if not execute:
         return model
+    _execute_insert([model])
+    return None
 
 
 def sync_insight_caching_state(team_id: int, insight_id: Optional[int] = None, dashboard_tile_id: Optional[int] = None):
@@ -194,7 +193,7 @@ def _execute_insert(states: List[Optional[InsightCachingState]]):
     from django.db import connection
 
     models: List[InsightCachingState] = list(filter(None, states))
-    if len(models) == 0:
+    if not models:
         return
 
     timestamp = now()

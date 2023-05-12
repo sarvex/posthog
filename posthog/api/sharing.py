@@ -46,12 +46,14 @@ def _get_sharing_configuration(team_id: int, dashboard: Optional[Dashboard] = No
         insight=insight, dashboard=dashboard, team_id=team_id
     )
     instance = cast(SharingConfiguration, instance)
-    if dashboard:
-        # Ensure the legacy dashboard fields are in sync with the sharing configuration
-        if dashboard.share_token and dashboard.share_token != instance.access_token:
-            instance.enabled = dashboard.is_shared
-            instance.access_token = dashboard.share_token
-            instance.save()
+    if (
+        dashboard
+        and dashboard.share_token
+        and dashboard.share_token != instance.access_token
+    ):
+        instance.enabled = dashboard.is_shared
+        instance.access_token = dashboard.share_token
+        instance.save()
 
     return instance
 
@@ -125,16 +127,11 @@ class SharingViewerPageViewSet(mixins.RetrieveModelMixin, StructuredViewSetMixin
     include_in_docs = False
 
     def get_object(self) -> Tuple[Optional[SharingConfiguration], Optional[ExportedAsset]]:
-        # JWT based access (ExportedAsset)
-        token = self.request.query_params.get("token")
-        if token:
-            asset = asset_for_token(token)
-            if asset:
+        if token := self.request.query_params.get("token"):
+            if asset := asset_for_token(token):
                 return (None, asset)
 
-        # Path based access (SharingConfiguration only)
-        access_token = self.kwargs.get("access_token", "").split(".")[0]
-        if access_token:
+        if access_token := self.kwargs.get("access_token", "").split(".")[0]:
             sharing_configuration = None
             try:
                 sharing_configuration = SharingConfiguration.objects.select_related("dashboard", "insight").get(
@@ -175,22 +172,22 @@ class SharingViewerPageViewSet(mixins.RetrieveModelMixin, StructuredViewSetMixin
             # Both insight AND dashboard can be set. If both it is assumed we should render that
             context["dashboard"] = resource.dashboard
             insight_data = InsightSerializer(resource.insight, many=False, context=context).data
-            exported_data.update({"insight": insight_data})
+            exported_data["insight"] = insight_data
         elif resource.dashboard and not resource.dashboard.deleted:
             dashboard_data = DashboardSerializer(resource.dashboard, context=context).data
             # We don't want the dashboard to be accidentally loaded via the shared endpoint
-            exported_data.update({"dashboard": dashboard_data})
+            exported_data["dashboard"] = dashboard_data
         else:
             raise NotFound()
 
         if "whitelabel" in request.GET and "white_labelling" in resource.team.organization.available_features:
-            exported_data.update({"whitelabel": True})
+            exported_data["whitelabel"] = True
         if "noHeader" in request.GET:
-            exported_data.update({"noHeader": True})
+            exported_data["noHeader"] = True
         if "legend" in request.GET:
-            exported_data.update({"legend": True})
+            exported_data["legend"] = True
 
-        if request.path.endswith(f".json"):
+        if request.path.endswith(".json"):
             return response.Response(exported_data)
 
         if request.GET.get("force_type"):

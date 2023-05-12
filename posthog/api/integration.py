@@ -33,14 +33,13 @@ class IntegrationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "created_by", "errors"]
 
     def create(self, validated_data: Any) -> Any:
-        request = self.context["request"]
-        team_id = self.context["team_id"]
-
         if validated_data["kind"] == "slack":
-            instance = SlackIntegration.integration_from_slack_response(team_id, request.user, validated_data["config"])
+            request = self.context["request"]
+            team_id = self.context["team_id"]
 
-            return instance
-
+            return SlackIntegration.integration_from_slack_response(
+                team_id, request.user, validated_data["config"]
+            )
         raise ValidationError("Kind not supported")
 
 

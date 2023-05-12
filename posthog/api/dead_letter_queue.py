@@ -119,8 +119,7 @@ def get_dead_letter_queue_size() -> int:
 def get_dlq_last_error_timestamp() -> int:
     ts = sync_execute("SELECT max(error_timestamp) FROM events_dead_letter_queue")[0][0]
 
-    last_error_timestamp = "-" if ts.timestamp() == datetime(1970, 1, 1).timestamp() else ts
-    return last_error_timestamp
+    return "-" if ts.timestamp() == datetime(1970, 1, 1).timestamp() else ts
 
 
 def get_dead_letter_queue_events_last_24h() -> int:

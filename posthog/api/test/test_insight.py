@@ -1780,11 +1780,10 @@ class TestInsight(ClickhouseTestMixin, LicensedTestMixin, APIBaseTest, QueryMatc
 
     def _create_one_person_cohort(self, properties: List[Dict[str, Any]]) -> int:
         Person.objects.create(team=self.team, properties=properties)
-        cohort_one_id = self.client.post(
+        return self.client.post(
             f"/api/projects/{self.team.id}/cohorts",
             data={"name": "whatever", "groups": [{"properties": properties}]},
         ).json()["id"]
-        return cohort_one_id
 
     @freeze_time("2022-03-22T00:00:00.000Z")
     def test_create_insight_viewed(self) -> None:
@@ -2268,7 +2267,7 @@ class TestInsight(ClickhouseTestMixin, LicensedTestMixin, APIBaseTest, QueryMatc
         #  Just verify it doesn't throw an error
         response = self.client.post(
             f"/api/projects/{self.team.id}/insights/cancel",
-            {"client_query_id": f"testid"},
+            {"client_query_id": "testid"},
         )
         self.assertEqual(response.status_code, 201, response.content)
 

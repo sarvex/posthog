@@ -24,7 +24,7 @@ def _create_action(**kwargs):
 
 
 def get_people_from_url_ok(client: Client, url: str):
-    response = client.get("/" + url)
+    response = client.get(f"/{url}")
     assert response.status_code == 200, response.content
     return response.json()["results"][0]["people"]
 
@@ -33,19 +33,41 @@ class TestClickhouseStickiness(ClickhouseTestMixin, stickiness_test_factory(Clic
     @snapshot_clickhouse_queries
     def test_filter_by_group_properties(self):
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:1", properties={"industry": "technology"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:1",
+            properties={"industry": "technology"},
         )
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:2", properties={"industry": "agriculture"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:2",
+            properties={"industry": "agriculture"},
         )
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:3", properties={"industry": "technology"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:3",
+            properties={"industry": "technology"},
         )
-        create_group(team_id=self.team.pk, group_type_index=0, group_key=f"org:4", properties={})
         create_group(
-            team_id=self.team.pk, group_type_index=1, group_key=f"company:1", properties={"industry": "technology"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:4",
+            properties={},
         )
-        create_group(team_id=self.team.pk, group_type_index=1, group_key=f"instance:1", properties={})
+        create_group(
+            team_id=self.team.pk,
+            group_type_index=1,
+            group_key="company:1",
+            properties={"industry": "technology"},
+        )
+        create_group(
+            team_id=self.team.pk,
+            group_type_index=1,
+            group_key="instance:1",
+            properties={},
+        )
 
         p1, p2, p3, p4 = self._create_multiple_people(
             period=timedelta(weeks=1), event_properties=lambda i: {"$group_0": f"org:{i}", "$group_1": "instance:1"}
@@ -81,13 +103,22 @@ class TestClickhouseStickiness(ClickhouseTestMixin, stickiness_test_factory(Clic
     @snapshot_clickhouse_queries
     def test_aggregate_by_groups(self):
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:0", properties={"industry": "technology"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:0",
+            properties={"industry": "technology"},
         )
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:1", properties={"industry": "agriculture"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:1",
+            properties={"industry": "agriculture"},
         )
         create_group(
-            team_id=self.team.pk, group_type_index=0, group_key=f"org:2", properties={"industry": "technology"}
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:2",
+            properties={"industry": "technology"},
         )
         self._create_multiple_people(
             period=timedelta(weeks=1), event_properties=lambda i: {"$group_0": f"org:{i // 2}"}

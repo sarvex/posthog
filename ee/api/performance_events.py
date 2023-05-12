@@ -117,10 +117,11 @@ class PerformanceEvents:
         ]
         columnized_results = []
         for result in ch_results:
-            columnized_item = {}
-            for index, column in enumerate(result):
-                if index < len(columns):
-                    columnized_item[columns[index]] = column
+            columnized_item = {
+                columns[index]: column
+                for index, column in enumerate(result)
+                if index < len(columns)
+            }
             columnized_results.append(columnized_item)
 
         return columnized_results

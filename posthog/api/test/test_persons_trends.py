@@ -28,8 +28,7 @@ def _create_cohort(**kwargs):
     team = kwargs.pop("team")
     name = kwargs.pop("name")
     groups = kwargs.pop("groups")
-    cohort = Cohort.objects.create(team=team, name=name, groups=groups)
-    return cohort
+    return Cohort.objects.create(team=team, name=name, groups=groups)
 
 
 class TestPersonTrends(ClickhouseTestMixin, APIBaseTest):
@@ -44,10 +43,7 @@ class TestPersonTrends(ClickhouseTestMixin, APIBaseTest):
         freeze_without_time = ["2019-12-24", "2020-01-01", "2020-01-02"]
         freeze_with_time = ["2019-12-24 03:45:34", "2020-01-01 00:06:34", "2020-01-02 16:34:34"]
 
-        freeze_args = freeze_without_time
-        if use_time:
-            freeze_args = freeze_with_time
-
+        freeze_args = freeze_with_time if use_time else freeze_without_time
         with freeze_time(freeze_args[0]):
             _create_event(team=self.team, event="sign up", distinct_id="blabla", properties={"$some_property": "value"})
 
@@ -135,9 +131,12 @@ class TestPersonTrends(ClickhouseTestMixin, APIBaseTest):
     def test_people_endpoint_paginated(self):
 
         for index in range(0, 150):
-            _create_person(team_id=self.team.pk, distinct_ids=["person" + str(index)])
+            _create_person(team_id=self.team.pk, distinct_ids=[f"person{str(index)}"])
             _create_event(
-                team=self.team, event="sign up", distinct_id="person" + str(index), timestamp="2020-01-04T12:00:00Z"
+                team=self.team,
+                event="sign up",
+                distinct_id=f"person{str(index)}",
+                timestamp="2020-01-04T12:00:00Z",
             )
 
         event_response = self.client.get(

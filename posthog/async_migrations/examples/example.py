@@ -112,8 +112,7 @@ class Migration(AsyncMigrationDefinition):
         total_events_to_move = result2[0][0]
         total_events_moved = result[0][0]
 
-        progress = 100 * total_events_moved / total_events_to_move
-        return progress
+        return 100 * total_events_moved / total_events_to_move
 
     def is_required(self):
         res = sync_execute("SHOW CREATE TABLE person_distinct_id")

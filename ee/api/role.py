@@ -30,9 +30,10 @@ class RolePermissions(BasePermission):
             organization=organization,
         )
 
-        if request.method in SAFE_METHODS or requesting_membership.level >= OrganizationMembership.Level.ADMIN:
-            return True
-        return False
+        return (
+            request.method in SAFE_METHODS
+            or requesting_membership.level >= OrganizationMembership.Level.ADMIN
+        )
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -71,8 +72,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
         role_access_objects = FeatureFlagRoleAccess.objects.filter(role=role).values_list("feature_flag_id")
         flags = FeatureFlag.objects.filter(id__in=role_access_objects)
-        for flag in flags:
-            associated_flags.append({"id": flag.id, "key": flag.key})
+        associated_flags.extend({"id": flag.id, "key": flag.key} for flag in flags)
         return associated_flags
 
 

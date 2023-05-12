@@ -473,7 +473,7 @@ class TestBillingAPI(APILicensedTest):
         self.organization.available_features = []
         self.organization.save()
 
-        assert self.organization.available_features == []
+        assert not self.organization.available_features
         self.client.get("/api/billing-v2")
         self.organization.refresh_from_db()
         assert self.organization.available_features == ["feature1", "feature2"]

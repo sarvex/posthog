@@ -74,8 +74,7 @@ class DashboardAPI:
         response = self.client.get(f"/api/projects/{team_id}/dashboards/{dashboard_id}", query_params)
         self.assertEqual(response.status_code, expected_status)
 
-        response_json = response.json()
-        return response_json
+        return response.json()
 
     def list_dashboards(
         self,
@@ -92,8 +91,7 @@ class DashboardAPI:
         response = self.client.get(f"/api/projects/{team_id}/dashboards/", query_params)
         self.assertEqual(response.status_code, expected_status)
 
-        response_json = response.json()
-        return response_json
+        return response.json()
 
     def list_insights(
         self,
@@ -110,8 +108,7 @@ class DashboardAPI:
         response = self.client.get(f"/api/projects/{team_id}/insights/", {"basic": True, "limit": 30, **query_params})
         self.assertEqual(response.status_code, expected_status)
 
-        response_json = response.json()
-        return response_json
+        return response.json()
 
     def get_insight(
         self,
@@ -129,8 +126,7 @@ class DashboardAPI:
         response = self.client.get(f"/api/projects/{team_id}/insights/{insight_id}", query_params)
         self.assertEqual(response.status_code, expected_status)
 
-        response_json = response.json()
-        return response_json
+        return response.json()
 
     def create_insight(
         self, data: Dict[str, Any], team_id: Optional[int] = None, expected_status: int = status.HTTP_201_CREATED
@@ -226,10 +222,8 @@ class DashboardAPI:
         tiles = dashboard_json["tiles"]
         assert len(tiles) == expected_tiles_to_update
 
-        x = 0
         y = 0
-        for tile in tiles:
-            x += 1
+        for x, tile in enumerate(tiles, start=1):
             y += 1
 
             tile_id = tile["id"]

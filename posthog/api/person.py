@@ -134,25 +134,17 @@ def get_funnel_actor_class(filter: Filter) -> Callable:
 
     if filter.correlation_person_entity and EE_AVAILABLE:
 
-        if EE_AVAILABLE:
-            from ee.clickhouse.queries.funnels.funnel_correlation_persons import FunnelCorrelationActors
+        from ee.clickhouse.queries.funnels.funnel_correlation_persons import FunnelCorrelationActors
 
-            funnel_actor_class = FunnelCorrelationActors
-        else:
-            raise ValueError(
-                "Funnel Correlations is not available without an enterprise license and enterprise supported deployment"
-            )
+        return FunnelCorrelationActors
     elif filter.funnel_viz_type == FunnelVizType.TRENDS:
-        funnel_actor_class = ClickhouseFunnelTrendsActors
+        return ClickhouseFunnelTrendsActors
+    elif filter.funnel_order_type == "strict":
+        return ClickhouseFunnelStrictActors
+    elif filter.funnel_order_type == "unordered":
+        return ClickhouseFunnelUnorderedActors
     else:
-        if filter.funnel_order_type == "unordered":
-            funnel_actor_class = ClickhouseFunnelUnorderedActors
-        elif filter.funnel_order_type == "strict":
-            funnel_actor_class = ClickhouseFunnelStrictActors
-        else:
-            funnel_actor_class = ClickhouseFunnelActors
-
-    return funnel_actor_class
+        return ClickhouseFunnelActors
 
 
 class PersonViewSet(PKorUUIDViewSet, StructuredViewSetMixin, viewsets.ModelViewSet):
@@ -514,8 +506,9 @@ class PersonViewSet(PKorUUIDViewSet, StructuredViewSetMixin, viewsets.ModelViewS
         filter = prepare_actor_query_filter(filter)
 
         funnel_filter = None
-        funnel_filter_data = request.GET.get("funnel_filter") or request.data.get("funnel_filter")
-        if funnel_filter_data:
+        if funnel_filter_data := request.GET.get(
+            "funnel_filter"
+        ) or request.data.get("funnel_filter"):
             if isinstance(funnel_filter_data, str):
                 funnel_filter_data = json.loads(funnel_filter_data)
             funnel_filter = Filter(data={"insight": INSIGHT_FUNNELS, **funnel_filter_data}, team=self.team)

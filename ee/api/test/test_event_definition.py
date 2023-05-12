@@ -58,7 +58,9 @@ class TestEventDefinitionEnterpriseAPI(APIBaseTest):
         regular_event = EnterpriseEventDefinition.objects.create(team=self.team, name="regular event", owner=self.user)
         regular_event.tagged_items.create(tag_id=tag.id)
 
-        response = self.client.get(f"/api/projects/@current/event_definitions/?search=enter")
+        response = self.client.get(
+            "/api/projects/@current/event_definitions/?search=enter"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 1)
@@ -68,17 +70,23 @@ class TestEventDefinitionEnterpriseAPI(APIBaseTest):
         self.assertEqual(response_data["results"][0]["tags"], ["deprecated"])
         self.assertEqual(response_data["results"][0]["owner"]["id"], self.user.id)
 
-        response = self.client.get(f"/api/projects/@current/event_definitions/?search=enterprise")
+        response = self.client.get(
+            "/api/projects/@current/event_definitions/?search=enterprise"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 1)
 
-        response = self.client.get(f"/api/projects/@current/event_definitions/?search=e ev")
+        response = self.client.get(
+            "/api/projects/@current/event_definitions/?search=e ev"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 2)
 
-        response = self.client.get(f"/api/projects/@current/event_definitions/?search=bust")
+        response = self.client.get(
+            "/api/projects/@current/event_definitions/?search=bust"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = response.json()
         self.assertEqual(len(response_data["results"]), 0)
@@ -134,7 +142,9 @@ class TestEventDefinitionEnterpriseAPI(APIBaseTest):
         assert response.json()["verified_at"] is None
         assert response.json()["updated_at"] == "2021-08-25T22:09:14.252000Z"
 
-        query_list_response = self.client.get(f"/api/projects/@current/event_definitions")
+        query_list_response = self.client.get(
+            "/api/projects/@current/event_definitions"
+        )
         matches = [p["name"] for p in query_list_response.json()["results"] if p["name"] == "enterprise event"]
         assert len(matches) == 1
 

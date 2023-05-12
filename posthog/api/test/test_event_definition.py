@@ -214,6 +214,6 @@ def create_event_definitions(event_definition: Dict, team_id: int) -> EventDefin
     """
     Create event definition for a team.
     """
-    created_definition = EventDefinition.objects.create(name=event_definition["name"], team_id=team_id)
-
-    return created_definition
+    return EventDefinition.objects.create(
+        name=event_definition["name"], team_id=team_id
+    )

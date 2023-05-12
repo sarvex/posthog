@@ -66,7 +66,7 @@ class MatrixManager:
         existing_user: Optional[User] = User.objects.filter(email=email).first()
         if existing_user is None:
             if self.print_steps:
-                print(f"Creating demo organization, project, and user...")
+                print("Creating demo organization, project, and user...")
             organization_kwargs: Dict[str, Any] = {"name": organization_name}
             if settings.DEMO:
                 organization_kwargs["plugins_access_level"] = Organization.PluginsAccessLevel.INSTALL
@@ -77,7 +77,7 @@ class MatrixManager:
                 )
                 team = self.create_team(organization)
             if self.print_steps:
-                print(f"Saving simulated data...")
+                print("Saving simulated data...")
             self.run_on_team(team, new_user)
             return (organization, team, new_user)
         elif existing_user.is_staff:
@@ -107,10 +107,13 @@ class MatrixManager:
 
     @staticmethod
     def create_team(organization: Organization, **kwargs) -> Team:
-        team = Team.objects.create(
-            organization=organization, ingested_event=True, completed_snippet_onboarding=True, is_demo=True, **kwargs
+        return Team.objects.create(
+            organization=organization,
+            ingested_event=True,
+            completed_snippet_onboarding=True,
+            is_demo=True,
+            **kwargs
         )
-        return team
 
     def run_on_team(self, team: Team, user: User):
         does_clickhouse_data_need_saving = True

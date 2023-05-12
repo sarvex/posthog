@@ -24,7 +24,9 @@ def get_site_app(request: HttpRequest, id: int, token: str, hash: str) -> HttpRe
         config = get_site_config_from_schema(source_file.config_schema, source_file.config)
         response = f"{source}().inject({{config:{json.dumps(config)},posthog:window['__$$ph_site_app_{id}']}})"
 
-        statsd.incr(f"posthog_cloud_raw_endpoint_success", tags={"endpoint": "site_app"})
+        statsd.incr(
+            "posthog_cloud_raw_endpoint_success", tags={"endpoint": "site_app"}
+        )
         return HttpResponse(content=response, content_type="application/javascript")
     except Exception as e:
         capture_exception(e, {"data": {"id": id, "token": token}})

@@ -97,13 +97,12 @@ class BreakdownMixin(serializers.Serializer):
     def validate(self, data):
         breakdown_type = data.get("breakdown_type", "event")
 
-        if breakdown_type == "cohort":
-            if (
-                data.get("breakdown")
-                and not isinstance(data["breakdown"], list)
-                or any(not isinstance(item, int) for item in data["breakdown"])
-            ):
-                raise serializers.ValidationError("If breakdown_type is cohort, breakdown must be a list of numbers")
+        if breakdown_type == "cohort" and (
+            data.get("breakdown")
+            and not isinstance(data["breakdown"], list)
+            or any(not isinstance(item, int) for item in data["breakdown"])
+        ):
+            raise serializers.ValidationError("If breakdown_type is cohort, breakdown must be a list of numbers")
 
         if (
             (breakdown_type == "event" or data["breakdown_type"] == "person")

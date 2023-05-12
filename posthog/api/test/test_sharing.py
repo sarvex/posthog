@@ -102,10 +102,10 @@ class TestSharing(APIBaseTest):
         response = self.client.patch(
             f"/api/projects/{self.team.id}/dashboards/{dashboard.id}/sharing", {"enabled": True}
         )
-        response = self.client.get(f"/shared_dashboard/my_test_token")
+        response = self.client.get("/shared_dashboard/my_test_token")
         assert response.status_code == 200
         response = self.client.patch(f"/api/projects/{self.team.id}/dashboards/{dashboard.id}", {"deleted": True})
-        response = self.client.get(f"/shared_dashboard/my_test_token")
+        response = self.client.get("/shared_dashboard/my_test_token")
         assert response.status_code == 404
 
     @patch("posthog.models.exported_asset.object_storage.read_bytes")

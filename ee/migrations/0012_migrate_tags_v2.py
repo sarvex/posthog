@@ -38,7 +38,11 @@ def forwards(apps, schema_editor):
         )
         event_definitions = iter(event_definition_paginator.get_page(event_definition_page))
         for tags, team_id, event_definition_id in event_definitions:
-            unique_tags = set(tagify(t) for t in tags if isinstance(t, str) and t.strip() != "")
+            unique_tags = {
+                tagify(t)
+                for t in tags
+                if isinstance(t, str) and t.strip() != ""
+            }
             for tag in unique_tags:
                 temp_tag = Tag(name=tag, team_id=team_id)
                 createables.append((temp_tag, TaggedItem(event_definition_id=event_definition_id, tag_id=temp_tag.id)))
@@ -64,7 +68,11 @@ def forwards(apps, schema_editor):
         )
         property_definitions = iter(property_definition_paginator.get_page(property_definition_page))
         for tags, team_id, property_definition_id in property_definitions:
-            unique_tags = set(tagify(t) for t in tags if isinstance(t, str) and t.strip() != "")
+            unique_tags = {
+                tagify(t)
+                for t in tags
+                if isinstance(t, str) and t.strip() != ""
+            }
             for tag in unique_tags:
                 temp_tag = Tag(name=tag, team_id=team_id)
                 createables.append(

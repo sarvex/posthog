@@ -78,11 +78,11 @@ class ClickhouseSecondaryExperimentResult:
     def get_funnel_conversion_rate_for_variants(self, insight_results) -> Dict[str, float]:
         variants = {}
         for result in insight_results:
-            total = result[0]["count"]
-            success = result[-1]["count"]
             breakdown_value = result[0]["breakdown_value"][0]
 
             if breakdown_value in self.variants:
+                total = result[0]["count"]
+                success = result[-1]["count"]
                 variants[breakdown_value] = round(int(success) / int(total), 3)
 
         return variants
@@ -92,10 +92,10 @@ class ClickhouseSecondaryExperimentResult:
         variants = {}
 
         for result in insight_results:
-            count = result["count"]
             breakdown_value = result["breakdown_value"]
 
             if breakdown_value in self.variants:
+                count = result["count"]
                 variants[breakdown_value] = count
 
         return variants

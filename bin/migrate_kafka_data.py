@@ -202,16 +202,15 @@ def handle(**options):
             # according to e.g. linger_ms etc.
             for topic, messages in messages_by_topic.items():
                 print(f"Sending {len(messages)} messages to topic {topic}")  # noqa: T201
-                for message in messages:
-                    futures.append(
-                        producer.send(
-                            to_topic,
-                            message.value,
-                            key=message.key,
-                            headers=message.headers,
-                        )
+                futures.extend(
+                    producer.send(
+                        to_topic,
+                        message.value,
+                        key=message.key,
+                        headers=message.headers,
                     )
-
+                    for message in messages
+                )
             # Flush the producer to ensure that all messages are sent.
             print("Flushing producer")  # noqa: T201
             producer.flush()

@@ -228,8 +228,11 @@ class DashboardSerializer(TaggedItemSerializerMixin, serializers.ModelSerializer
 
         validated_data.pop("use_template", None)  # Remove attribute if present
 
-        being_undeleted = instance.deleted and "deleted" in validated_data and not validated_data["deleted"]
-        if being_undeleted:
+        if (
+            being_undeleted := instance.deleted
+            and "deleted" in validated_data
+            and not validated_data["deleted"]
+        ):
             self._undo_delete_related_tiles(instance)
 
         initial_data = dict(self.initial_data)
@@ -256,8 +259,7 @@ class DashboardSerializer(TaggedItemSerializerMixin, serializers.ModelSerializer
 
         if tile_data.get("text", None):
             text_json: Dict = tile_data.get("text", {})
-            created_by_json = text_json.get("created_by", None)
-            if created_by_json:
+            if created_by_json := text_json.get("created_by", None):
                 last_modified_by = user
                 created_by = User.objects.get(id=created_by_json.get("id"))
             else:

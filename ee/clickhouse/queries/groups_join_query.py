@@ -80,7 +80,7 @@ class GroupsJoinQuery:
             hogql_context=self._filter.hogql_context,
         )
 
-        params.update(filter_params)
+        params |= filter_params
 
         query = f"""
             SELECT

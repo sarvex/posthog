@@ -127,10 +127,10 @@ class SelectQuerySymbol(Symbol):
         self,
         table_symbol: Union[BaseTableSymbol, "SelectQuerySymbol", "SelectQueryAliasSymbol"],
     ) -> Optional[str]:
-        for key, value in self.tables.items():
-            if value == table_symbol:
-                return key
-        return None
+        return next(
+            (key for key, value in self.tables.items() if value == table_symbol),
+            None,
+        )
 
     def get_child(self, name: str) -> Symbol:
         if name == "*":

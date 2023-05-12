@@ -47,7 +47,7 @@ class TestRunner(AsyncMigrationBaseTest):
         self.assertEqual(sm.current_operation_index, 7)
         self.assertEqual(sm.posthog_min_version, "1.0.0")
         self.assertEqual(sm.posthog_max_version, "100000.0.0")
-        self.assertEqual(sm.finished_at.day, datetime.today().day)
+        self.assertEqual(sm.finished_at.day, datetime.now().day)
         self.assertEqual(self.migration.sec.side_effect_count, 3)
         self.assertEqual(self.migration.sec.side_effect_rollback_count, 0)
 

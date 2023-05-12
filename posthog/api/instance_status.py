@@ -38,11 +38,18 @@ class InstanceStatusViewSet(viewsets.ViewSet):
         redis_alive = is_redis_alive()
         postgres_alive = is_postgres_alive()
 
-        metrics: List[Dict[str, Union[str, bool, int, float, Dict[str, Any]]]] = []
-
-        metrics.append({"key": "posthog_version", "metric": "PostHog version", "value": VERSION})
-
-        metrics.append({"key": "posthog_git_sha", "metric": "PostHog Git SHA", "value": GIT_SHA})
+        metrics: List[Dict[str, Union[str, bool, int, float, Dict[str, Any]]]] = [
+            {
+                "key": "posthog_version",
+                "metric": "PostHog version",
+                "value": VERSION,
+            },
+            {
+                "key": "posthog_git_sha",
+                "metric": "PostHog Git SHA",
+                "value": GIT_SHA,
+            },
+        ]
 
         helm_info = get_helm_info_env()
         if len(helm_info) > 0:
@@ -176,12 +183,9 @@ class InstanceStatusViewSet(viewsets.ViewSet):
         permission_classes=[IsAuthenticated, SingleTenancyOrAdmin, OrganizationAdminAnyPermissions],
     )
     def analyze_ch_query(self, request: Request) -> Response:
-        response = {}
-
         from posthog.clickhouse.system_status import analyze_query
 
-        response["results"] = analyze_query(request.data["query"])
-
+        response = {"results": analyze_query(request.data["query"])}
         return Response(response)
 
     def get_postgres_running_queries(self):

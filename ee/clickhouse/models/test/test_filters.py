@@ -27,12 +27,14 @@ def _filter_events(filter: Filter, team: Team, order_by: Optional[str] = None):
 
     events = query_with_columns(
         GET_EVENTS_WITH_PROPERTIES.format(
-            filters=prop_filters, order_by="ORDER BY {}".format(order_by) if order_by else ""
+            filters=prop_filters,
+            order_by=f"ORDER BY {order_by}" if order_by else "",
         ),
         params,
     )
-    parsed_events = ClickhouseEventSerializer(events, many=True, context={"elements": None, "people": None}).data
-    return parsed_events
+    return ClickhouseEventSerializer(
+        events, many=True, context={"elements": None, "people": None}
+    ).data
 
 
 def _filter_persons(filter: Filter, team: Team):

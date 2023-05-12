@@ -74,7 +74,10 @@ class TestPropertyDefinitionAPI(APIBaseTest):
 
     def test_pagination_of_property_definitions(self):
         PropertyDefinition.objects.bulk_create(
-            [PropertyDefinition(team=self.team, name="z_property_{}".format(i)) for i in range(1, 301)]
+            [
+                PropertyDefinition(team=self.team, name=f"z_property_{i}")
+                for i in range(1, 301)
+            ]
         )
 
         response = self.client.get(f"/api/projects/{self.team.pk}/property_definitions/")

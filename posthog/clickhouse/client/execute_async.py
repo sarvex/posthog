@@ -45,8 +45,7 @@ class QueryStatus:
 
 def generate_redis_results_key(query_id):
     REDIS_KEY_PREFIX_ASYNC_RESULTS = "query_with_progress"
-    key = f"{REDIS_KEY_PREFIX_ASYNC_RESULTS}:{query_id}"
-    return key
+    return f"{REDIS_KEY_PREFIX_ASYNC_RESULTS}:{query_id}"
 
 
 def execute_with_progress(
@@ -154,10 +153,7 @@ def enqueue_execute_with_progress(
     redis_client = redis.get_client()
 
     if force:
-        # If we want to force rerun of this query we need to
-        # 1) Get the current status from redis
-        task_str = redis_client.get(key)
-        if task_str:
+        if task_str := redis_client.get(key):
             # if the status exists in redis we need to tell celery to kill the job
             task_str = task_str.decode("utf-8")
             query_task = QueryStatus.from_json(task_str)  # type: ignore
@@ -195,8 +191,7 @@ def get_status_or_results(team_id, query_id):
     redis_client = redis.get_client()
     key = generate_redis_results_key(query_id)
     try:
-        byte_results = redis_client.get(key)
-        if byte_results:
+        if byte_results := redis_client.get(key):
             str_results = byte_results.decode("utf-8")
         else:
             return QueryStatus(team_id, error=True, error_message="Query is unknown to backend")
@@ -212,8 +207,10 @@ def _query_hash(query: str, team_id: int, args: Any) -> str:
     """
     Takes a query and returns a hex encoded hash of the query and args
     """
-    if args:
-        key = hashlib.md5((str(team_id) + query + json.dumps(args)).encode("utf-8")).hexdigest()
-    else:
-        key = hashlib.md5((str(team_id) + query).encode("utf-8")).hexdigest()
-    return key
+    return (
+        hashlib.md5(
+            (str(team_id) + query + json.dumps(args)).encode("utf-8")
+        ).hexdigest()
+        if args
+        else hashlib.md5((str(team_id) + query).encode("utf-8")).hexdigest()
+    )

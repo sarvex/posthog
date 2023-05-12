@@ -143,7 +143,7 @@ class QueryContext:
                 is_feature_flag_filter="AND (name LIKE %(is_feature_flag_like)s)",
                 params={**self.params, "is_feature_flag_like": "$feature/%"},
             )
-        elif not is_feature_flag:
+        else:
             return dataclasses.replace(
                 self,
                 is_feature_flag_filter="AND (name NOT LIKE %(is_feature_flag_like)s)",
@@ -155,17 +155,17 @@ class QueryContext:
             return dataclasses.replace(
                 self, params={**self.params, "type": PropertyDefinition.Type.EVENT, "group_type_index": -1}
             )
-        elif type == "person":
-            return dataclasses.replace(
-                self,
-                should_join_event_property=False,
-                params={**self.params, "type": PropertyDefinition.Type.PERSON, "group_type_index": -1},
-            )
         elif type == "group":
             return dataclasses.replace(
                 self,
                 should_join_event_property=False,
                 params={**self.params, "type": PropertyDefinition.Type.GROUP, "group_type_index": group_type_index},
+            )
+        elif type == "person":
+            return dataclasses.replace(
+                self,
+                should_join_event_property=False,
+                params={**self.params, "type": PropertyDefinition.Type.PERSON, "group_type_index": -1},
             )
 
     def with_event_property_filter(
@@ -212,7 +212,7 @@ class QueryContext:
         )
 
     def as_sql(self):
-        query = f"""
+        return f"""
             SELECT {self.property_definition_fields}, {self.event_property_field} AS is_seen_on_filtered_events
             FROM {self.table}
             {self._join_on_event_property()}
@@ -226,10 +226,8 @@ class QueryContext:
             LIMIT {self.limit} OFFSET {self.offset}
             """
 
-        return query
-
     def as_count_sql(self):
-        query = f"""
+        return f"""
             SELECT count(*) as full_count
             FROM {self.table}
             {self._join_on_event_property()}
@@ -240,8 +238,6 @@ class QueryContext:
              {self.name_filter} {self.numerical_filter} {self.search_query} {self.event_property_filter} {self.is_feature_flag_filter}
              {self.event_name_filter}
             """
-
-        return query
 
     def _join_on_event_property(self):
         return (
@@ -330,10 +326,7 @@ class NotCountingLimitOffsetPaginator(LimitOffsetPagination):
         self.offset = self.get_offset(request)
         self.request = request
 
-        if self.count == 0 or self.offset > self.count:
-            return []
-
-        return list(queryset)
+        return [] if self.count == 0 or self.offset > self.count else list(queryset)
 
 
 class PropertyDefinitionViewSet(
@@ -440,8 +433,9 @@ class PropertyDefinitionViewSet(
             except ImportError:
                 pass
             else:
-                enterprise_property = EnterprisePropertyDefinition.objects.filter(id=id).first()
-                if enterprise_property:
+                if enterprise_property := EnterprisePropertyDefinition.objects.filter(
+                    id=id
+                ).first():
                     return enterprise_property
                 non_enterprise_property = PropertyDefinition.objects.get(id=id)
                 new_enterprise_property = EnterprisePropertyDefinition(

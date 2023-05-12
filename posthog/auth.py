@@ -37,9 +37,10 @@ class PersonalAPIKeyAuthentication(authentication.BaseAuthentication):
     ) -> Optional[Tuple[str, str]]:
         """Try to find personal API key in request and return it along with where it was found."""
         if "HTTP_AUTHORIZATION" in request.META:
-            authorization_match = re.match(rf"^{cls.keyword}\s+(\S.+)$", request.META["HTTP_AUTHORIZATION"])
-            if authorization_match:
-                return authorization_match.group(1).strip(), "Authorization header"
+            if authorization_match := re.match(
+                rf"^{cls.keyword}\s+(\S.+)$", request.META["HTTP_AUTHORIZATION"]
+            ):
+                return authorization_match[1].strip(), "Authorization header"
         data = request.data if request_data is None and isinstance(request, Request) else request_data
 
         if data and "personal_api_key" in data:
@@ -109,15 +110,15 @@ class TemporaryTokenAuthentication(authentication.BaseAuthentication):
         # This happens when someone is trying to create actions from the editor on their own website
         if (
             request.headers.get("Origin")
-            and urlsplit(request.headers["Origin"]).netloc not in urlsplit(request.build_absolute_uri("/")).netloc
-        ):
-            if not request.GET.get("temporary_token"):
-                raise AuthenticationFailed(
-                    detail="No temporary_token set. "
-                    + "That means you're either trying to access this API from a different site, "
-                    + "or it means your proxy isn't sending the correct headers. "
-                    + "See https://posthog.com/docs/deployment/running-behind-proxy for more information."
-                )
+            and urlsplit(request.headers["Origin"]).netloc
+            not in urlsplit(request.build_absolute_uri("/")).netloc
+        ) and not request.GET.get("temporary_token"):
+            raise AuthenticationFailed(
+                detail="No temporary_token set. "
+                + "That means you're either trying to access this API from a different site, "
+                + "or it means your proxy isn't sending the correct headers. "
+                + "See https://posthog.com/docs/deployment/running-behind-proxy for more information."
+            )
         if request.GET.get("temporary_token"):
             User = apps.get_model(app_label="posthog", model_name="User")
             user = User.objects.filter(is_active=True, temporary_token=request.GET.get("temporary_token"))
@@ -137,22 +138,24 @@ class JwtAuthentication(authentication.BaseAuthentication):
     @classmethod
     def authenticate(cls, request: Union[HttpRequest, Request]) -> Optional[Tuple[Any, None]]:
         if "HTTP_AUTHORIZATION" in request.META:
-            authorization_match = re.match(rf"^Bearer\s+(\S.+)$", request.META["HTTP_AUTHORIZATION"])
-            if authorization_match:
-                try:
-                    token = authorization_match.group(1).strip()
-                    info = decode_jwt(token, PosthogJwtAudience.IMPERSONATED_USER)
-                    user = User.objects.get(pk=info["id"])
-                    return (user, None)
-                except jwt.DecodeError:
-                    # If it doesn't look like a JWT then we allow the PersonalAPIKeyAuthentication to have a go
-                    return None
-                except Exception:
-                    raise AuthenticationFailed(detail=f"Token invalid.")
-            else:
+            if not (
+                authorization_match := re.match(
+                    rf"^Bearer\s+(\S.+)$", request.META["HTTP_AUTHORIZATION"]
+                )
+            ):
                 # We don't throw so that the PersonalAPIKeyAuthentication can have a go
                 return None
 
+            try:
+                token = authorization_match[1].strip()
+                info = decode_jwt(token, PosthogJwtAudience.IMPERSONATED_USER)
+                user = User.objects.get(pk=info["id"])
+                return (user, None)
+            except jwt.DecodeError:
+                # If it doesn't look like a JWT then we allow the PersonalAPIKeyAuthentication to have a go
+                return None
+            except Exception:
+                raise AuthenticationFailed(detail="Token invalid.")
         return None
 
     @classmethod

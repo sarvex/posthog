@@ -138,7 +138,7 @@ class ClickhouseGroupsView(StructuredViewSetMixin, mixins.ListModelMixin, viewse
     @action(methods=["GET"], detail=False)
     def property_definitions(self, request: request.Request, **kw):
         rows = sync_execute(
-            f"""
+            """
             SELECT group_type_index, tupleElement(keysAndValues, 1) as key, count(*) as count
             FROM groups
             ARRAY JOIN JSONExtractKeysAndValuesRaw(group_properties) as keysAndValues

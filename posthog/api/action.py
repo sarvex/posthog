@@ -93,12 +93,13 @@ class ActionSerializer(TaggedItemSerializerMixin, serializers.HyperlinkedModelSe
             attrs["team_id"] = self.context["view"].team_id
             include_args = {"team_id": attrs["team_id"]}
 
-        colliding_action_ids = list(
-            Action.objects.filter(name=attrs["name"], deleted=False, **include_args)
+        if colliding_action_ids := list(
+            Action.objects.filter(
+                name=attrs["name"], deleted=False, **include_args
+            )
             .exclude(**exclude_args)[:1]
             .values_list("id", flat=True)
-        )
-        if colliding_action_ids:
+        ):
             raise serializers.ValidationError(
                 {"name": f"This project already has an action with this name, ID {colliding_action_ids[0]}"},
                 code="unique",
@@ -203,7 +204,9 @@ class ActionViewSet(TaggedItemViewSetMixin, StructuredViewSetMixin, ForbidDestro
         if raw_count >= limit and next_url:
             if "offset" in next_url:
                 next_url = next_url[1:]
-                next_url = next_url.replace("offset=" + str(offset), "offset=" + str(offset + limit))
+                next_url = next_url.replace(
+                    f"offset={str(offset)}", f"offset={str(offset + limit)}"
+                )
             else:
                 next_url = f"{next_url}{'&' if '?' in next_url else '?'}offset={offset+limit}"
         else:
@@ -242,13 +245,13 @@ class ActionViewSet(TaggedItemViewSetMixin, StructuredViewSetMixin, ForbidDestro
             return Response({"count": 0})
 
         results = sync_execute(
-            "SELECT count(1) FROM events WHERE team_id = %(team_id)s AND timestamp < %(before)s AND timestamp > %(after)s AND {}".format(
-                query
-            ),
+            f"SELECT count(1) FROM events WHERE team_id = %(team_id)s AND timestamp < %(before)s AND timestamp > %(after)s AND {query}",
             {
                 "team_id": action.team_id,
                 "before": now().strftime("%Y-%m-%d %H:%M:%S.%f"),
-                "after": (now() - relativedelta(months=3)).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                "after": (now() - relativedelta(months=3)).strftime(
+                    "%Y-%m-%d %H:%M:%S.%f"
+                ),
                 **params,
                 **hogql_context.values,
             },

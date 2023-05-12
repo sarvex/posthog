@@ -41,7 +41,7 @@ def report_user_signed_up(
         "is_email_verified": user.is_email_verified,
     }
     if user_analytics_metadata is not None:
-        props.update(user_analytics_metadata)
+        props |= user_analytics_metadata
 
     if org_analytics_metadata is not None:
         for k, v in org_analytics_metadata.items():

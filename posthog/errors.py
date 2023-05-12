@@ -10,10 +10,11 @@ def wrap_query_error(err: Exception) -> Exception:
     if not isinstance(err, ServerException):
         return err
 
-    # Return a 512 error for queries which would time out
-    match = re.search(r"Estimated query execution time \(.* seconds\) is too long.", err.message)
-    if match:
-        return EstimatedQueryExecutionTimeTooLong(detail=match.group(0))
+    if match := re.search(
+        r"Estimated query execution time \(.* seconds\) is too long.",
+        err.message,
+    ):
+        return EstimatedQueryExecutionTimeTooLong(detail=match[0])
 
     # :TRICKY: Return a custom class for every code by looking up the short name and creating a class dynamically.
     if hasattr(err, "code"):

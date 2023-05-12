@@ -89,10 +89,8 @@ class CohortSerializer(serializers.ModelSerializer):
     def _handle_static(self, cohort: Cohort, request: Request):
         if request.FILES.get("csv"):
             self._calculate_static_by_csv(request.FILES["csv"], cohort)
-        else:
-            filter_data = request.GET.dict()
-            if filter_data:
-                insert_cohort_from_insight_filter.delay(cohort.pk, filter_data)
+        elif filter_data := request.GET.dict():
+            insert_cohort_from_insight_filter.delay(cohort.pk, filter_data)
 
     def _handle_csv(self, file, cohort: Cohort) -> None:
         decoded_file = file.read().decode("utf-8").splitlines()
@@ -127,25 +125,28 @@ class CohortSerializer(serializers.ModelSerializer):
 
     def validate_filters(self, request_filters: Dict):
 
-        if isinstance(request_filters, dict) and "properties" in request_filters:
-            if self.context["request"].method == "PATCH":
-                parsed_filter = Filter(data=request_filters)
-                instance = cast(Cohort, self.instance)
-                cohort_id = instance.pk
-                flags: QuerySet[FeatureFlag] = FeatureFlag.objects.filter(
-                    team_id=self.context["team_id"], active=True, deleted=False
-                )
-                for prop in parsed_filter.property_groups.flat:
-                    if prop.type == "behavioral":
-                        if [flag for flag in flags if cohort_id in flag.cohort_ids]:
-                            raise serializers.ValidationError(
-                                detail=f"Behavioral filters cannot be added to cohorts used in feature flags.",
-                                code="behavioral_cohort_found",
-                            )
-
-            return request_filters
-        else:
+        if (
+            not isinstance(request_filters, dict)
+            or "properties" not in request_filters
+        ):
             raise ValidationError("Filters must be a dictionary with a 'properties' key.")
+        if self.context["request"].method == "PATCH":
+            parsed_filter = Filter(data=request_filters)
+            instance = cast(Cohort, self.instance)
+            cohort_id = instance.pk
+            flags: QuerySet[FeatureFlag] = FeatureFlag.objects.filter(
+                team_id=self.context["team_id"], active=True, deleted=False
+            )
+            for prop in parsed_filter.property_groups.flat:
+                if prop.type == "behavioral" and [
+                    flag for flag in flags if cohort_id in flag.cohort_ids
+                ]:
+                    raise serializers.ValidationError(
+                        detail="Behavioral filters cannot be added to cohorts used in feature flags.",
+                        code="behavioral_cohort_found",
+                    )
+
+        return request_filters
 
     def update(self, cohort: Cohort, validated_data: Dict, *args: Any, **kwargs: Any) -> Cohort:  # type: ignore
         request = self.context["request"]
@@ -295,9 +296,7 @@ def will_create_loops(cohort: Cohort) -> bool:
 
 def insert_cohort_people_into_pg(cohort: Cohort):
     ids = sync_execute(
-        "SELECT person_id FROM {} where team_id = %(team_id)s AND cohort_id = %(cohort_id)s".format(
-            PERSON_STATIC_COHORT_TABLE
-        ),
+        f"SELECT person_id FROM {PERSON_STATIC_COHORT_TABLE} where team_id = %(team_id)s AND cohort_id = %(cohort_id)s",
         {"cohort_id": cohort.pk, "team_id": cohort.team.pk},
     )
     cohort.insert_users_list_by_uuid(items=[str(id[0]) for id in ids])
@@ -322,17 +321,22 @@ def insert_cohort_actors_into_ch(cohort: Cohort, filter_data: Dict):
     elif insight_type == INSIGHT_PATHS:
         path_filter = PathFilter(data=filter_data, team=cohort.team)
         query_builder = PathsActors(path_filter, cohort.team, funnel_filter=None)
+    elif settings.DEBUG:
+        raise ValueError(f"Insight type: {insight_type} not supported for cohort creation")
     else:
-        if settings.DEBUG:
-            raise ValueError(f"Insight type: {insight_type} not supported for cohort creation")
-        else:
-            capture_exception(Exception(f"Insight type: {insight_type} not supported for cohort creation"))
+        capture_exception(Exception(f"Insight type: {insight_type} not supported for cohort creation"))
 
     if query_builder.is_aggregating_by_groups:
         if settings.DEBUG:
-            raise ValueError(f"Query type: Group based queries are not supported for cohort creation")
+            raise ValueError(
+                "Query type: Group based queries are not supported for cohort creation"
+            )
         else:
-            capture_exception(Exception(f"Query type: Group based queries are not supported for cohort creation"))
+            capture_exception(
+                Exception(
+                    "Query type: Group based queries are not supported for cohort creation"
+                )
+            )
     else:
         query, params = query_builder.actor_query(limit_actors=False)
 

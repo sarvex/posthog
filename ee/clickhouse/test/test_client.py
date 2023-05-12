@@ -121,7 +121,7 @@ class ClickhouseClientTestCase(TestCase, ClickhouseTestMixin):
             )
             self.assertEqual(len(sqls), 1)
             first_query = sqls[0]
-            self.assertIn(f"SELECT 1", first_query)
+            self.assertIn("SELECT 1", first_query)
             self.assertNotIn("this request returns", first_query)
 
             # Make sure it still includes the "annotation" comment that includes

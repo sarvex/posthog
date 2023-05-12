@@ -27,9 +27,5 @@ class EnterprisePropertyDefinitionSerializer(TaggedItemSerializerMixin, serializ
     def update(self, event_definition: EnterprisePropertyDefinition, validated_data):
         validated_data["updated_by"] = self.context["request"].user
         if "property_type" in validated_data:
-            if validated_data["property_type"] == "Numeric":
-                validated_data["is_numerical"] = True
-            else:
-                validated_data["is_numerical"] = False
-
+            validated_data["is_numerical"] = validated_data["property_type"] == "Numeric"
         return super().update(event_definition, validated_data)

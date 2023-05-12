@@ -34,7 +34,7 @@ class TestIntegration(APILicensedTest):
     def test_validates_payload(self):
         body = {"type": "url_verification", "challenge": "to-a-duel!"}
         headers = self._headers_for_payload(body)
-        res = self.client.post(f"/api/integrations/slack/events", body, **headers)
+        res = self.client.post("/api/integrations/slack/events", body, **headers)
 
         assert res.json() == {"challenge": "to-a-duel!"}
 
@@ -43,7 +43,7 @@ class TestIntegration(APILicensedTest):
         headers = self._headers_for_payload(body)
 
         body["challenge"] = "intercepted!"
-        res = self.client.post(f"/api/integrations/slack/events", body, **headers)
+        res = self.client.post("/api/integrations/slack/events", body, **headers)
 
         assert res.status_code == 403
 
@@ -52,6 +52,6 @@ class TestIntegration(APILicensedTest):
         headers = self._headers_for_payload(body)
         headers["HTTP_X_SLACK_REQUEST_TIMESTAMP"] = "not-a-time"
 
-        res = self.client.post(f"/api/integrations/slack/events", body, **headers)
+        res = self.client.post("/api/integrations/slack/events", body, **headers)
 
         assert res.status_code == 403

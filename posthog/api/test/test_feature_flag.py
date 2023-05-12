@@ -881,14 +881,16 @@ class TestFeatureFlag(APIBaseTest):
         assert self.team is not None
         self.assertNotEqual(user.team.id, self.team.id)
 
-        response_team_1 = self.client.get(f"/api/projects/@current/feature_flags")
+        response_team_1 = self.client.get("/api/projects/@current/feature_flags")
         response_team_1_token = self.client.get(f"/api/projects/@current/feature_flags?token={user.team.api_token}")
         response_team_2 = self.client.get(f"/api/projects/@current/feature_flags?token={self.team.api_token}")
 
         self.assertEqual(response_team_1.json(), response_team_1_token.json())
         self.assertNotEqual(response_team_1.json(), response_team_2.json())
 
-        response_invalid_token = self.client.get(f"/api/projects/@current/feature_flags?token=invalid")
+        response_invalid_token = self.client.get(
+            "/api/projects/@current/feature_flags?token=invalid"
+        )
         self.assertEqual(response_invalid_token.status_code, 401)
 
     def test_creating_a_feature_flag_with_same_team_and_key_after_deleting(self):
@@ -916,7 +918,11 @@ class TestFeatureFlag(APIBaseTest):
     def test_my_flags_is_not_nplus1(self) -> None:
         self.client.post(
             f"/api/projects/{self.team.id}/feature_flags/",
-            data={"name": f"flag", "key": f"flag", "filters": {"groups": [{"rollout_percentage": 5}]}},
+            data={
+                "name": "flag",
+                "key": "flag",
+                "filters": {"groups": [{"rollout_percentage": 5}]},
+            },
             format="json",
         ).json()
 
@@ -927,7 +933,11 @@ class TestFeatureFlag(APIBaseTest):
         for i in range(1, 4):
             self.client.post(
                 f"/api/projects/{self.team.id}/feature_flags/",
-                data={"name": f"flag", "key": f"flag_{i}", "filters": {"groups": [{"rollout_percentage": 5}]}},
+                data={
+                    "name": "flag",
+                    "key": f"flag_{i}",
+                    "filters": {"groups": [{"rollout_percentage": 5}]},
+                },
                 format="json",
             ).json()
 
@@ -938,7 +948,11 @@ class TestFeatureFlag(APIBaseTest):
     def test_getting_flags_is_not_nplus1(self) -> None:
         self.client.post(
             f"/api/projects/{self.team.id}/feature_flags/",
-            data={"name": f"flag", "key": f"flag_0", "filters": {"groups": [{"rollout_percentage": 5}]}},
+            data={
+                "name": "flag",
+                "key": "flag_0",
+                "filters": {"groups": [{"rollout_percentage": 5}]},
+            },
             format="json",
         ).json()
 
@@ -949,7 +963,11 @@ class TestFeatureFlag(APIBaseTest):
         for i in range(1, 5):
             self.client.post(
                 f"/api/projects/{self.team.id}/feature_flags/",
-                data={"name": f"flag", "key": f"flag_{i}", "filters": {"groups": [{"rollout_percentage": 5}]}},
+                data={
+                    "name": "flag",
+                    "key": f"flag_{i}",
+                    "filters": {"groups": [{"rollout_percentage": 5}]},
+                },
                 format="json",
             ).json()
 
@@ -1112,7 +1130,7 @@ class TestFeatureFlag(APIBaseTest):
         response = self.client.get(f"/api/feature_flag/local_evaluation?token={self.team.api_token}")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        response = self.client.get(f"/api/feature_flag/local_evaluation")
+        response = self.client.get("/api/feature_flag/local_evaluation")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         response = self.client.get(
@@ -1908,7 +1926,7 @@ class TestFeatureFlag(APIBaseTest):
                 "team_id": self.team.pk,
                 "scope": "burst",
                 "rate": "5/minute",
-                "path": f"/api/projects/TEAM_ID/feature_flags",
+                "path": "/api/projects/TEAM_ID/feature_flags",
             },
         )
 
@@ -1917,7 +1935,8 @@ class TestFeatureFlag(APIBaseTest):
         # but not call to local evaluation
         for _ in range(7):
             response = self.client.get(
-                f"/api/feature_flag/local_evaluation", HTTP_AUTHORIZATION=f"Bearer {personal_api_key}"
+                "/api/feature_flag/local_evaluation",
+                HTTP_AUTHORIZATION=f"Bearer {personal_api_key}",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len([1 for name, args, kwargs in incr_mock.mock_calls if args[0] == "rate_limit_exceeded"]), 0)
@@ -2389,7 +2408,12 @@ class TestResiliency(TransactionTestCase, QueryMatchingTest):
 
         GroupTypeMapping.objects.create(team=self.team, group_type="organization", group_type_index=0)
 
-        create_group(team_id=self.team.pk, group_type_index=0, group_key=f"org:1", properties={"industry": f"finance"})
+        create_group(
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:1",
+            properties={"industry": "finance"},
+        )
 
         serialized_data = FeatureFlagSerializer(
             data={
@@ -2644,7 +2668,12 @@ class TestResiliency(TransactionTestCase, QueryMatchingTest):
 
         GroupTypeMapping.objects.create(team=self.team, group_type="organization", group_type_index=0)
 
-        create_group(team_id=self.team.pk, group_type_index=0, group_key=f"org:1", properties={"industry": f"finance"})
+        create_group(
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="org:1",
+            properties={"industry": "finance"},
+        )
 
         serialized_data = FeatureFlagSerializer(
             data={

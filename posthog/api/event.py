@@ -145,7 +145,9 @@ class EventViewSet(StructuredViewSetMixin, mixins.RetrieveModelMixin, mixins.Lis
                 )
 
             result = ClickhouseEventSerializer(
-                query_result[0:limit], many=True, context={"people": self._get_people(query_result, team)}
+                query_result[:limit],
+                many=True,
+                context={"people": self._get_people(query_result, team)},
             ).data
 
             next_url: Optional[str] = None

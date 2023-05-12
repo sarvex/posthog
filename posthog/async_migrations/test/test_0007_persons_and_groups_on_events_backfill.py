@@ -323,7 +323,7 @@ class Test0007PersonsAndGroupsOnEventsBackfill(AsyncMigrationBaseTest, Clickhous
         create_event(event_uuid=uuid1, team=self.team, distinct_id="1", event="$pageview")
 
         old_fn = MIGRATION_DEFINITION.operations[-1].fn
-        MIGRATION_DEFINITION.operations[-1].fn = lambda _: 0 / 0  # type: ignore
+        MIGRATION_DEFINITION.operations[-1].fn = lambda _: 1
 
         migration_successful = run_migration()
         self.assertFalse(migration_successful)

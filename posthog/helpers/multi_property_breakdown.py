@@ -44,24 +44,23 @@ def protect_old_clients_from_multi_property_default(
     )
     is_multi_property_breakdown = is_breakdown_request and "breakdowns" in request_filter and is_breakdown_result
 
-    if is_single_property_breakdown or is_multi_property_breakdown:
-        copied_result = copy.deepcopy(result)
-        for series_index in range(len(result)):
-            copied_series = copied_result[series_index]
-
-            if isinstance(copied_series, List):
-                for data_index in range(len(copied_series)):
-                    copied_item = copied_series[data_index]
-
-                    if is_single_property_breakdown:
-                        if copied_item.get("breakdown") and isinstance(copied_item["breakdown"], List):
-                            copied_item["breakdown"] = copied_item["breakdown"][0]
-                        if copied_item.get("breakdown_value") and isinstance(copied_item["breakdown_value"], List):
-                            copied_item["breakdown_value"] = copied_item["breakdown_value"][0]
-
-                    if is_multi_property_breakdown:
-                        breakdowns = copied_item.pop("breakdown", None)
-                        copied_item["breakdowns"] = breakdowns
-        return copied_result
-    else:
+    if not is_single_property_breakdown and not is_multi_property_breakdown:
         return result
+    copied_result = copy.deepcopy(result)
+    for series_index in range(len(result)):
+        copied_series = copied_result[series_index]
+
+        if isinstance(copied_series, List):
+            for data_index in range(len(copied_series)):
+                copied_item = copied_series[data_index]
+
+                if is_single_property_breakdown:
+                    if copied_item.get("breakdown") and isinstance(copied_item["breakdown"], List):
+                        copied_item["breakdown"] = copied_item["breakdown"][0]
+                    if copied_item.get("breakdown_value") and isinstance(copied_item["breakdown_value"], List):
+                        copied_item["breakdown_value"] = copied_item["breakdown_value"][0]
+
+                if is_multi_property_breakdown:
+                    breakdowns = copied_item.pop("breakdown", None)
+                    copied_item["breakdowns"] = breakdowns
+    return copied_result

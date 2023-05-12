@@ -36,19 +36,18 @@ def get_target_entity(filter: Union[Filter, StickinessFilter]) -> Entity:
         raise ValidationError("An entity id and the entity type must be provided to determine an entity")
 
     entity_math = filter.target_entity_math or "total"  # make math explicit
-    possible_entity = entity_from_order(filter.target_entity_order, filter.entities)
-
-    if possible_entity:
+    if possible_entity := entity_from_order(
+        filter.target_entity_order, filter.entities
+    ):
         return possible_entity
 
-    possible_entity = retrieve_entity_from(
+    if possible_entity := retrieve_entity_from(
         filter.target_entity_id,
         filter.target_entity_type,
         entity_math,
         filter.events,
         filter.actions,
-    )
-    if possible_entity:
+    ):
         return possible_entity
     elif filter.target_entity_type:
         return Entity(
@@ -66,10 +65,9 @@ def entity_from_order(order: Optional[str], entities: List[Entity]) -> Optional[
     if not order:
         return None
 
-    for entity in entities:
-        if entity.index == int(order):
-            return entity
-    return None
+    return next(
+        (entity for entity in entities if entity.index == int(order)), None
+    )
 
 
 def retrieve_entity_from(
@@ -118,7 +116,9 @@ def format_paginated_url(request: request.Request, offset: int, page_size: int, 
         result = result[1:]
         result = result.replace(f"offset={offset}", f"offset={new_offset}")
     else:
-        result = request.build_absolute_uri("{}{}offset={}".format(result, "&" if "?" in result else "?", new_offset))
+        result = request.build_absolute_uri(
+            f'{result}{"&" if "?" in result else "?"}offset={new_offset}'
+        )
     return result
 
 
@@ -157,9 +157,7 @@ def get_project_id(data, request) -> Optional[int]:
         return int(request.POST["project_id"])
     if isinstance(data, list):
         data = data[0]  # Mixpanel Swift SDK
-    if data.get("project_id"):
-        return int(data["project_id"])
-    return None
+    return int(data["project_id"]) if data.get("project_id") else None
 
 
 def get_data(request):
@@ -168,7 +166,7 @@ def get_data(request):
         data = load_data_from_request(request)
     except RequestParsingError as error:
         statsd.incr("capture_endpoint_invalid_payload")
-        logger.exception(f"Invalid payload", error=error)
+        logger.exception("Invalid payload", error=error)
         return (
             None,
             cors_response(
@@ -280,18 +278,18 @@ def get_event_ingestion_context(
         ingestion_context = get_event_ingestion_context_for_personal_api_key(
             personal_api_key=token, project_id=project_id
         )
-        if ingestion_context is None:
-            error_response = cors_response(
-                request,
-                generate_exception_response(
-                    "capture",
-                    "Invalid Personal API key.",
-                    type="authentication_error",
-                    code="invalid_personal_api_key",
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                ),
-            )
-            return None, db_error, error_response
+    if ingestion_context is None:
+        error_response = cors_response(
+            request,
+            generate_exception_response(
+                "capture",
+                "Invalid Personal API key.",
+                type="authentication_error",
+                code="invalid_personal_api_key",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            ),
+        )
+        return None, db_error, error_response
 
     # if we still haven't found a ingestion_context, return an error to the client
     if not ingestion_context:
@@ -349,12 +347,7 @@ def get_event_ingestion_context_for_personal_api_key(
 def check_definition_ids_inclusion_field_sql(
     raw_included_definition_ids: Optional[str], is_property: bool, named_key: str
 ):
-    # Create conditional field based on whether id exists in included_properties
-    if is_property:
-        included_definitions_sql = f"(id = ANY (%({named_key})s::uuid[]))"
-    else:
-        included_definitions_sql = f"(id = ANY (%({named_key})s::uuid[]))"
-
+    included_definitions_sql = f"(id = ANY (%({named_key})s::uuid[]))"
     if not raw_included_definition_ids:
         return included_definitions_sql, []
 
@@ -428,6 +421,4 @@ def get_pk_or_uuid(queryset: QuerySet, key: Union[int, str]) -> QuerySet:
 
 
 def parse_bool(value: Union[str, List[str]]) -> bool:
-    if value == "true":
-        return True
-    return False
+    return value == "true"

@@ -70,7 +70,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
         query, params = parse_prop_grouped_clauses(
             team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 1)
 
@@ -113,7 +113,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             else PersonPropertiesMode.USING_SUBQUERY,
             hogql_context=filter.hogql_context,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
 
         self.assertEqual(len(result), 1)
@@ -155,7 +155,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             else PersonPropertiesMode.USING_SUBQUERY,
             hogql_context=filter.hogql_context,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 1)
 
@@ -170,7 +170,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             else PersonPropertiesMode.USING_SUBQUERY,
             hogql_context=filter.hogql_context,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 2)
 
@@ -212,7 +212,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             else PersonPropertiesMode.USING_SUBQUERY,
             hogql_context=filter.hogql_context,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 1)
 
@@ -227,7 +227,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             else PersonPropertiesMode.USING_SUBQUERY,
             hogql_context=filter.hogql_context,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 2)
 
@@ -253,7 +253,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
         query, params = parse_prop_grouped_clauses(
             team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
         self.assertEqual(len(result), 2)
 
@@ -279,7 +279,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
         query, params = parse_prop_grouped_clauses(
             team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         self.assertIn("\nFROM person_distinct_id2\n", final_query)
 
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
@@ -733,7 +733,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             query, params = parse_prop_grouped_clauses(
                 team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
             )
-            final_query = "SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {}".format(query)
+            final_query = f"SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {query}"
 
             result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
 
@@ -799,7 +799,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
         query, params = parse_prop_grouped_clauses(
             team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
         )
-        final_query = "SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {query}"
         self.assertIn("\nFROM person_distinct_id2\n", final_query)
 
         result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
@@ -890,7 +890,7 @@ class TestCohort(ClickhouseTestMixin, BaseTest):
             query, params = parse_prop_grouped_clauses(
                 team_id=self.team.pk, property_group=filter.property_groups, hogql_context=filter.hogql_context
             )
-            final_query = "SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {}".format(query)
+            final_query = f"SELECT uuid, distinct_id FROM events WHERE team_id = %(team_id)s {query}"
 
             result = sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
 

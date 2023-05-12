@@ -86,7 +86,7 @@ def authorize_and_redirect(request: HttpRequest) -> HttpResponse:
     redirect_url = urlparse(request.GET["redirect"])
 
     if not current_team or not hostname_in_allowed_url_list(current_team.app_urls, redirect_url.hostname):
-        return HttpResponse(f"Can only redirect to a permitted domain.", status=400)
+        return HttpResponse("Can only redirect to a permitted domain.", status=400)
 
     if referer_url.hostname != redirect_url.hostname:
         return HttpResponse(f"Can only redirect to the same domain as the referer: {referer_url.hostname}", status=400)

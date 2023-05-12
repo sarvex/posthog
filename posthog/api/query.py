@@ -90,7 +90,7 @@ class QueryViewSet(StructuredViewSetMixin, viewsets.ViewSet):
 
                 return JsonResponse(results, safe=False)  # allow non-dict responses with safe=False
             else:
-                raise ValidationError("Unsupported query kind: %s" % query_kind)
+                raise ValidationError(f"Unsupported query kind: {query_kind}")
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
@@ -115,13 +115,11 @@ class QueryViewSet(StructuredViewSetMixin, viewsets.ViewSet):
                 query_source, parse_constant=lambda x: parsing_error(f"Unsupported constant found in JSON: {x}")
             )
         except (json.JSONDecodeError, UnicodeDecodeError) as error_main:
-            raise ValidationError("Invalid JSON: %s" % (str(error_main)))
+            raise ValidationError(f"Invalid JSON: {str(error_main)}")
         return query
 
     def _response_to_json_response(self, response: BaseModel) -> JsonResponse:
-        dict = {}
-        for key in response.__fields__.keys():
-            dict[key] = getattr(response, key)
+        dict = {key: getattr(response, key) for key in response.__fields__.keys()}
         return JsonResponse(dict)
 
     def _is_hogql_enabled(self) -> bool:

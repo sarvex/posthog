@@ -73,8 +73,16 @@ class TestDecide(BaseTest, QueryMatchingTest):
         """
 
         response = self.client.post(
-            f"/decide/?v=2&v=1.19.0",
-            {"data": self._dict_to_b64({"token": self.team.api_token, "distinct_id": "example_id", "groups": {}})},
+            "/decide/?v=2&v=1.19.0",
+            {
+                "data": self._dict_to_b64(
+                    {
+                        "token": self.team.api_token,
+                        "distinct_id": "example_id",
+                        "groups": {},
+                    }
+                )
+            },
             HTTP_ORIGIN="http://127.0.0.1:8000",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

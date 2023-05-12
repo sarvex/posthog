@@ -201,31 +201,31 @@ def relative_date_parse_with_delta_mapping(input: str) -> Tuple[datetime.datetim
     delta_mapping: Dict[str, int] = {}
     if not match:
         return date, delta_mapping
-    if match.group("type") == "h":
-        delta_mapping["hours"] = int(match.group("number"))
-    elif match.group("type") == "d":
-        if match.group("number"):
-            delta_mapping["days"] = int(match.group("number"))
-    elif match.group("type") == "w":
-        if match.group("number"):
-            delta_mapping["weeks"] = int(match.group("number"))
-    elif match.group("type") == "m":
-        if match.group("number"):
-            delta_mapping["months"] = int(match.group("number"))
-        if match.group("position") == "Start":
+    if match["type"] == "h":
+        delta_mapping["hours"] = int(match["number"])
+    elif match["type"] == "d":
+        if match["number"]:
+            delta_mapping["days"] = int(match["number"])
+    elif match["type"] == "w":
+        if match["number"]:
+            delta_mapping["weeks"] = int(match["number"])
+    elif match["type"] == "m":
+        if match["number"]:
+            delta_mapping["months"] = int(match["number"])
+        if match["position"] == "Start":
             delta_mapping["day"] = 1
-        if match.group("position") == "End":
+        if match["position"] == "End":
             delta_mapping["day"] = 31
-    elif match.group("type") == "q":
-        if match.group("number"):
-            delta_mapping["weeks"] = 13 * int(match.group("number"))
-    elif match.group("type") == "y":
-        if match.group("number"):
-            delta_mapping["years"] = int(match.group("number"))
-        if match.group("position") == "Start":
+    elif match["type"] == "q":
+        if match["number"]:
+            delta_mapping["weeks"] = 13 * int(match["number"])
+    elif match["type"] == "y":
+        if match["number"]:
+            delta_mapping["years"] = int(match["number"])
+        if match["position"] == "Start":
             delta_mapping["month"] = 1
             delta_mapping["day"] = 1
-        if match.group("position") == "End":
+        if match["position"] == "End":
             delta_mapping["month"] = 12
             delta_mapping["day"] = 31
     date -= relativedelta(**delta_mapping)  # type: ignore
@@ -247,7 +247,7 @@ def request_to_date_query(filters: Dict[str, Any], exact: Optional[bool]) -> Dic
         if filters["date_from"] == "all":
             date_from = None
     else:
-        date_from = datetime.datetime.today() - relativedelta(days=DEFAULT_DATE_FROM_DAYS)
+        date_from = dt.datetime.now() - relativedelta(days=DEFAULT_DATE_FROM_DAYS)
         date_from = date_from.replace(hour=0, minute=0, second=0, microsecond=0)
 
     date_to = None
@@ -323,9 +323,7 @@ def render_template(template_name: str, request: HttpRequest, context: Dict = {}
         context["e2e_testing"] = True
 
     if settings.SELF_CAPTURE:
-        api_token = get_self_capture_api_token(request)
-
-        if api_token:
+        if api_token := get_self_capture_api_token(request):
             context["js_posthog_api_key"] = f"'{api_token}'"
             context["js_posthog_host"] = "window.location.origin"
     else:
@@ -345,8 +343,7 @@ def render_template(template_name: str, request: HttpRequest, context: Dict = {}
     from posthog.api.geoip import get_geoip_properties  # avoids circular import
 
     geoip_properties = get_geoip_properties(get_ip_address(request))
-    country_code = geoip_properties.get("$geoip_country_code", None)
-    if country_code:
+    if country_code := geoip_properties.get("$geoip_country_code", None):
         posthog_app_context["week_start"] = get_week_start_for_country_code(country_code)
 
     posthog_bootstrap: Dict[str, Any] = {}
@@ -415,9 +412,7 @@ def get_self_capture_api_token(request: Optional[HttpRequest]) -> Optional[str]:
         except Exception:
             pass
 
-    if team:
-        return team.api_token
-    return None
+    return team.api_token if team else None
 
 
 def get_default_event_name():
@@ -477,8 +472,7 @@ def friendly_time(seconds: float):
 
 def get_ip_address(request: HttpRequest) -> str:
     """use requestobject to fetch client machine's IP Address"""
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
+    if x_forwarded_for := request.META.get("HTTP_X_FORWARDED_FOR"):
         ip = x_forwarded_for.split(",")[0]
     else:
         ip = request.META.get("REMOTE_ADDR")  # Real IP address of client Machine
@@ -497,10 +491,8 @@ def dict_from_cursor_fetchall(cursor):
 
 def convert_property_value(input: Union[str, bool, dict, list, int, Optional[str]]) -> str:
     if isinstance(input, bool):
-        if input is True:
-            return "true"
-        return "false"
-    if isinstance(input, dict) or isinstance(input, list):
+        return "true" if input is True else "false"
+    if isinstance(input, (dict, list)):
         return json.dumps(input, sort_keys=True)
     return str(input)
 
@@ -556,8 +548,10 @@ def cors_response(request, response):
     allow_headers = request.META.get("HTTP_ACCESS_CONTROL_REQUEST_HEADERS", "").split(",")
     allow_headers = [header for header in allow_headers if header in ["traceparent", "request-id"]]
 
-    response["Access-Control-Allow-Headers"] = "X-Requested-With,Content-Type" + (
-        "," + ",".join(allow_headers) if len(allow_headers) > 0 else ""
+    response[
+        "Access-Control-Allow-Headers"
+    ] = "X-Requested-With,Content-Type" + (
+        "," + ",".join(allow_headers) if allow_headers else ""
     )
     return response
 
@@ -570,9 +564,7 @@ def get_celery_heartbeat() -> Union[str, int]:
     last_heartbeat = get_client().get("POSTHOG_HEARTBEAT")
     worker_heartbeat = int(time.time()) - int(last_heartbeat) if last_heartbeat else -1
 
-    if 0 <= worker_heartbeat < 300:
-        return worker_heartbeat
-    return "offline"
+    return worker_heartbeat if 0 <= worker_heartbeat < 300 else "offline"
 
 
 def base64_decode(data):
@@ -591,7 +583,7 @@ def decompress(data: Any, compression: str):
     if not data:
         return None
 
-    if compression == "gzip" or compression == "gzip-js":
+    if compression in {"gzip", "gzip-js"}:
         if data == b"undefined":
             raise RequestParsingError(
                 "data being loaded from the request body for decompression is the literal string 'undefined'"
@@ -600,7 +592,7 @@ def decompress(data: Any, compression: str):
         try:
             data = gzip.decompress(data)
         except (EOFError, OSError, zlib.error) as error:
-            raise RequestParsingError("Failed to decompress data. %s" % (str(error)))
+            raise RequestParsingError(f"Failed to decompress data. {str(error)}")
 
     if compression == "lz64":
         if not isinstance(data, str):
@@ -629,15 +621,14 @@ def decompress(data: Any, compression: str):
         # but we just want it to return None
         data = json.loads(data, parse_constant=lambda x: None)
     except (json.JSONDecodeError, UnicodeDecodeError) as error_main:
-        if compression == "":
-            try:
-                return decompress(data, "gzip")
-            except Exception as inner:
-                # re-trying with compression set didn't succeed, throw original error
-                raise RequestParsingError("Invalid JSON: %s" % (str(error_main))) from inner
-        else:
-            raise RequestParsingError("Invalid JSON: %s" % (str(error_main)))
+        if compression:
+            raise RequestParsingError(f"Invalid JSON: {str(error_main)}")
 
+        try:
+            return decompress(data, "gzip")
+        except Exception as inner:
+                # re-trying with compression set didn't succeed, throw original error
+            raise RequestParsingError(f"Invalid JSON: {str(error_main)}") from inner
     # TODO: data can also be an array, function assumes it's either None or a dictionary.
     return data
 
@@ -754,15 +745,15 @@ def is_plugin_server_alive() -> bool:
 
 
 def get_plugin_server_version() -> Optional[str]:
-    cache_key_value = get_client().get("@posthog-plugin-server/version")
-    if cache_key_value:
+    if cache_key_value := get_client().get("@posthog-plugin-server/version"):
         return cache_key_value.decode("utf-8")
     return None
 
 
 def get_plugin_server_job_queues() -> Optional[List[str]]:
-    cache_key_value = get_client().get("@posthog-plugin-server/enabled-job-queues")
-    if cache_key_value:
+    if cache_key_value := get_client().get(
+        "@posthog-plugin-server/enabled-job-queues"
+    ):
         qs = cache_key_value.decode("utf-8").replace('"', "")
         return qs.split(",")
     return None
@@ -806,9 +797,7 @@ def get_instance_region() -> Optional[str]:
     """
     Returns the region for the current instance. `US` or 'EU'.
     """
-    if is_cloud():
-        return settings.REGION
-    return None
+    return settings.REGION if is_cloud() else None
 
 
 def get_can_create_org(user: Union["AbstractBaseUser", "AnonymousUser"]) -> bool:
@@ -907,7 +896,7 @@ def get_daterange(
         return []
 
     time_range = []
-    if frequency != "minute" and frequency != "hour":
+    if frequency not in ["minute", "hour"]:
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
     if frequency == "week":
@@ -927,8 +916,7 @@ def get_daterange(
 
 def get_safe_cache(cache_key: str):
     try:
-        cached_result = cache.get(cache_key)  # cache.get is safe in most cases
-        return cached_result
+        return cache.get(cache_key)
     except Exception:  # if it errors out, the cache is probably corrupted
         try:
             cache.delete(cache_key)  # in that case, try to delete the cache
@@ -1006,7 +994,7 @@ def str_to_bool(value: Any) -> bool:
     """
     if not value:
         return False
-    return str(value).lower() in ("y", "yes", "t", "true", "on", "1")
+    return str(value).lower() in {"y", "yes", "t", "true", "on", "1"}
 
 
 def get_helm_info_env() -> dict:
@@ -1131,7 +1119,7 @@ def generate_short_id():
 
 def get_week_start_for_country_code(country_code: str) -> int:
     # Data from https://github.com/unicode-cldr/cldr-core/blob/master/supplemental/weekData.json
-    if country_code in [
+    if country_code in {
         "AG",
         "AS",
         "AU",
@@ -1189,9 +1177,25 @@ def get_week_start_for_country_code(country_code: str) -> int:
         "YE",
         "ZA",
         "ZW",
-    ]:
+    }:
         return 0  # Sunday
-    if country_code in ["AE", "AF", "BH", "DJ", "DZ", "EG", "IQ", "IR", "JO", "KW", "LY", "OM", "QA", "SD", "SY"]:
+    if country_code in {
+        "AE",
+        "AF",
+        "BH",
+        "DJ",
+        "DZ",
+        "EG",
+        "IQ",
+        "IR",
+        "JO",
+        "KW",
+        "LY",
+        "OM",
+        "QA",
+        "SD",
+        "SY",
+    }:
         return 6  # Saturday
     return 1  # Monday
 

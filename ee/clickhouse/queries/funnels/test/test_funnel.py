@@ -43,9 +43,21 @@ class TestClickhouseFunnel(ClickhouseTestMixin, APIBaseTest):
         create_group(team_id=self.team.pk, group_type_index=1, group_key="company:1", properties={})
         create_group(team_id=self.team.pk, group_type_index=1, group_key="company:2", properties={})
 
-        _create_person(distinct_ids=[f"user_1"], team=self.team, properties={"email": "fake@test.com"})
-        _create_person(distinct_ids=[f"user_2"], team=self.team, properties={"email": "fake@test.com"})
-        _create_person(distinct_ids=[f"user_3"], team=self.team, properties={"email": "fake_2@test.com"})
+        _create_person(
+            distinct_ids=["user_1"],
+            team=self.team,
+            properties={"email": "fake@test.com"},
+        )
+        _create_person(
+            distinct_ids=["user_2"],
+            team=self.team,
+            properties={"email": "fake@test.com"},
+        )
+        _create_person(
+            distinct_ids=["user_3"],
+            team=self.team,
+            properties={"email": "fake_2@test.com"},
+        )
 
         action1 = Action.objects.create(team=self.team, name="action1")
         ActionStep.objects.create(event="$pageview", action=action1)

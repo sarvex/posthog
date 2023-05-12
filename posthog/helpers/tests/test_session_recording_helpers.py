@@ -223,7 +223,7 @@ def test_paginate_decompression(chunked_and_compressed_snapshot_events):
     assert paginated_events["snapshot_data_by_window_id"] == {}
 
     # Non sequential snapshots
-    snapshot_data = snapshot_data[-3:] + snapshot_data[0:-3]
+    snapshot_data = snapshot_data[-3:] + snapshot_data[:-3]
     paginated_events = decompress_chunked_snapshot_data(1, "someid", snapshot_data, 10, 0)
     assert paginated_events["has_next"] is False
     assert len(paginated_events["snapshot_data_by_window_id"]["1"]) == 2
@@ -580,10 +580,12 @@ def compress_decompress_and_extract(events, chunk_size):
         event["properties"]["$snapshot_data"] for event in compress_and_chunk_snapshots(events, chunk_size)
     ]
     window_id = "abc123"
-    snapshot_list = []
-    for snapshot_data in snapshot_data_list:
-        snapshot_list.append(SnapshotDataTaggedWithWindowId(window_id=window_id, snapshot_data=snapshot_data))
-
+    snapshot_list = [
+        SnapshotDataTaggedWithWindowId(
+            window_id=window_id, snapshot_data=snapshot_data
+        )
+        for snapshot_data in snapshot_data_list
+    ]
     return decompress_chunked_snapshot_data(2, "someid", snapshot_list)["snapshot_data_by_window_id"][window_id]
 
 

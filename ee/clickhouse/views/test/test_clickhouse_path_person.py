@@ -175,7 +175,7 @@ class TestPathPerson(ClickhouseTestMixin, APIBaseTest):
             "limit": 15,
         }
 
-        response = self.client.get(f"/api/person/path/", data=request_data)
+        response = self.client.get("/api/person/path/", data=request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         j = response.json()
         people = j["results"][0]["people"]

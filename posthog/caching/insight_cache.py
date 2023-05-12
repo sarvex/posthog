@@ -37,7 +37,7 @@ def schedule_cache_updates():
 
     InsightCachingState.objects.filter(pk__in=(id for _, _, id in to_update)).update(last_refresh_queued_at=now())
 
-    if len(representative_by_cache_key) > 0:
+    if representative_by_cache_key:
         logger.info(
             "Scheduled caches to be updated", candidates=len(to_update), tasks_created=len(representative_by_cache_key)
         )
@@ -149,9 +149,8 @@ def update_cached_state(team_id: int, cache_key: str, timestamp: datetime, resul
 
 
 def _extract_insight_dashboard(caching_state: InsightCachingState) -> Tuple[Insight, Optional[Dashboard]]:
-    if caching_state.dashboard_tile is not None:
-        assert caching_state.dashboard_tile.insight is not None
-
-        return caching_state.dashboard_tile.insight, caching_state.dashboard_tile.dashboard
-    else:
+    if caching_state.dashboard_tile is None:
         return caching_state.insight, None
+    assert caching_state.dashboard_tile.insight is not None
+
+    return caching_state.dashboard_tile.insight, caching_state.dashboard_tile.dashboard

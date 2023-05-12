@@ -52,7 +52,7 @@ class TestSessionRecordings(APIBaseTest, ClickhouseTestMixin, QueryMatchingTest)
         }
 
         if snapshot_data:
-            snapshot.update(snapshot_data)
+            snapshot |= snapshot_data
 
         create_session_recording_events(
             team_id=team_id,
@@ -66,34 +66,33 @@ class TestSessionRecordings(APIBaseTest, ClickhouseTestMixin, QueryMatchingTest)
     def create_chunked_snapshots(
         self, snapshot_count, distinct_id, session_id, timestamp, has_full_snapshot=True, window_id=""
     ):
-        snapshots = []
-        for index in range(snapshot_count):
-            snapshots.append(
-                {
-                    "type": 2 if has_full_snapshot else 3,
-                    "data": {
-                        "source": 0,
-                        "texts": [],
-                        "attributes": [],
-                        "removes": [],
-                        "adds": [
-                            {
-                                "parentId": 4,
-                                "nextId": 386,
-                                "node": {
-                                    "type": 2,
-                                    "tagName": "style",
-                                    "attributes": {"data-emotion": "css"},
-                                    "childNodes": [],
-                                    "id": 729,
-                                },
-                            }
-                        ],
-                    },
-                    "timestamp": (timestamp + timedelta(seconds=index)).timestamp() * 1000,
-                }
-            )
-
+        snapshots = [
+            {
+                "type": 2 if has_full_snapshot else 3,
+                "data": {
+                    "source": 0,
+                    "texts": [],
+                    "attributes": [],
+                    "removes": [],
+                    "adds": [
+                        {
+                            "parentId": 4,
+                            "nextId": 386,
+                            "node": {
+                                "type": 2,
+                                "tagName": "style",
+                                "attributes": {"data-emotion": "css"},
+                                "childNodes": [],
+                                "id": 729,
+                            },
+                        }
+                    ],
+                },
+                "timestamp": (timestamp + timedelta(seconds=index)).timestamp()
+                * 1000,
+            }
+            for index in range(snapshot_count)
+        ]
         create_session_recording_events(
             team_id=self.team.pk,
             distinct_id=distinct_id,

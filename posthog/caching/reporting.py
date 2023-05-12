@@ -60,13 +60,12 @@ class CacheUpdateReporting:
         if self.insights_queryset.exists() or self.dashboard_tiles_queryset.exists():
             self.mark_refresh_attempt_for(self.insights_queryset)
             self.mark_refresh_attempt_for(self.dashboard_tiles_queryset)
-        else:
-            if self.insight_id != "unknown":
-                self.mark_refresh_attempt_for(
-                    Insight.objects.filter(id=self.insight_id)
-                    if not self.dashboard_id
-                    else DashboardTile.objects.filter(insight_id=self.insight_id, dashboard_id=self.dashboard_id)
-                )
+        elif self.insight_id != "unknown":
+            self.mark_refresh_attempt_for(
+                Insight.objects.filter(id=self.insight_id)
+                if not self.dashboard_id
+                else DashboardTile.objects.filter(insight_id=self.insight_id, dashboard_id=self.dashboard_id)
+            )
 
     @staticmethod
     def mark_refresh_attempt_for(queryset: QuerySet) -> None:

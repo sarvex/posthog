@@ -166,11 +166,12 @@ def custom_postprocessing_hook(result, generator, request, public):
         paths[path] = {}
         for method, definition in methods.items():
             definition["tags"] = [d for d in definition["tags"] if d not in ["projects"]]
-            match = re.search(r"((\/api\/(organizations|projects)/{(.*?)}\/)|(\/api\/))(?P<one>[a-zA-Z0-9-_]*)\/", path)
-            if match:
-                definition["tags"].append(match.group("one"))
-            for tag in definition["tags"]:
-                all_tags.append(tag)
+            if match := re.search(
+                r"((\/api\/(organizations|projects)/{(.*?)}\/)|(\/api\/))(?P<one>[a-zA-Z0-9-_]*)\/",
+                path,
+            ):
+                definition["tags"].append(match["one"])
+            all_tags.extend(iter(definition["tags"]))
             definition["operationId"] = (
                 definition["operationId"].replace("organizations_", "", 1).replace("projects_", "", 1)
             )

@@ -69,7 +69,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
     def visitSelectUnionStmt(self, ctx: HogQLParser.SelectUnionStmtContext):
         selects = ctx.selectStmtWithParens()
         if len(selects) != 1:
-            raise NotImplementedError(f"Unsupported: UNION ALL")
+            raise NotImplementedError("Unsupported: UNION ALL")
         return self.visit(selects[0])
 
     def visitSelectStmtWithParens(self, ctx: HogQLParser.SelectStmtWithParensContext):
@@ -100,32 +100,32 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
                 select_query.limit_with_ties = True
 
         if ctx.withClause():
-            raise NotImplementedError(f"Unsupported: SelectStmt.withClause()")
+            raise NotImplementedError("Unsupported: SelectStmt.withClause()")
         if ctx.topClause():
-            raise NotImplementedError(f"Unsupported: SelectStmt.topClause()")
+            raise NotImplementedError("Unsupported: SelectStmt.topClause()")
         if ctx.arrayJoinClause():
-            raise NotImplementedError(f"Unsupported: SelectStmt.arrayJoinClause()")
+            raise NotImplementedError("Unsupported: SelectStmt.arrayJoinClause()")
         if ctx.windowClause():
-            raise NotImplementedError(f"Unsupported: SelectStmt.windowClause()")
+            raise NotImplementedError("Unsupported: SelectStmt.windowClause()")
         if ctx.settingsClause():
-            raise NotImplementedError(f"Unsupported: SelectStmt.settingsClause()")
+            raise NotImplementedError("Unsupported: SelectStmt.settingsClause()")
 
         return select_query
 
     def visitWithClause(self, ctx: HogQLParser.WithClauseContext):
-        raise NotImplementedError(f"Unsupported node: WithClause")
+        raise NotImplementedError("Unsupported node: WithClause")
 
     def visitTopClause(self, ctx: HogQLParser.TopClauseContext):
-        raise NotImplementedError(f"Unsupported node: TopClause")
+        raise NotImplementedError("Unsupported node: TopClause")
 
     def visitFromClause(self, ctx: HogQLParser.FromClauseContext):
         return self.visit(ctx.joinExpr())
 
     def visitArrayJoinClause(self, ctx: HogQLParser.ArrayJoinClauseContext):
-        raise NotImplementedError(f"Unsupported node: ArrayJoinClause")
+        raise NotImplementedError("Unsupported node: ArrayJoinClause")
 
     def visitWindowClause(self, ctx: HogQLParser.WindowClauseContext):
-        raise NotImplementedError(f"Unsupported node: WindowClause")
+        raise NotImplementedError("Unsupported node: WindowClause")
 
     def visitPrewhereClause(self, ctx: HogQLParser.PrewhereClauseContext):
         return self.visit(ctx.columnExpr())
@@ -143,19 +143,19 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visit(ctx.orderExprList())
 
     def visitProjectionOrderByClause(self, ctx: HogQLParser.ProjectionOrderByClauseContext):
-        raise NotImplementedError(f"Unsupported node: ProjectionOrderByClause")
+        raise NotImplementedError("Unsupported node: ProjectionOrderByClause")
 
     def visitLimitClause(self, ctx: HogQLParser.LimitClauseContext):
-        raise Exception(f"Parsed as part of SelectStmt, can't parse directly.")
+        raise Exception("Parsed as part of SelectStmt, can't parse directly.")
 
     def visitSettingsClause(self, ctx: HogQLParser.SettingsClauseContext):
-        raise NotImplementedError(f"Unsupported node: SettingsClause")
+        raise NotImplementedError("Unsupported node: SettingsClause")
 
     def visitJoinExprOp(self, ctx: HogQLParser.JoinExprOpContext):
         if ctx.GLOBAL():
-            raise NotImplementedError(f"Unsupported: GLOBAL JOIN")
+            raise NotImplementedError("Unsupported: GLOBAL JOIN")
         if ctx.LOCAL():
-            raise NotImplementedError(f"Unsupported: LOCAL JOIN")
+            raise NotImplementedError("Unsupported: LOCAL JOIN")
 
         join1: ast.JoinExpr = self.visit(ctx.joinExpr(0))
         join2: ast.JoinExpr = self.visit(ctx.joinExpr(1))
@@ -175,7 +175,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
 
     def visitJoinExprTable(self, ctx: HogQLParser.JoinExprTableContext):
         if ctx.sampleClause():
-            raise NotImplementedError(f"Unsupported: SAMPLE (JoinExprTable.sampleClause)")
+            raise NotImplementedError("Unsupported: SAMPLE (JoinExprTable.sampleClause)")
         table = self.visit(ctx.tableExpr())
         table_final = True if ctx.FINAL() else None
         if isinstance(table, ast.JoinExpr):
@@ -188,7 +188,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visit(ctx.joinExpr())
 
     def visitJoinExprCrossOp(self, ctx: HogQLParser.JoinExprCrossOpContext):
-        raise NotImplementedError(f"Unsupported node: JoinExprCrossOp")
+        raise NotImplementedError("Unsupported node: JoinExprCrossOp")
 
     def visitJoinOpInner(self, ctx: HogQLParser.JoinOpInnerContext):
         tokens = []
@@ -234,21 +234,21 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return " ".join(tokens)
 
     def visitJoinOpCross(self, ctx: HogQLParser.JoinOpCrossContext):
-        raise NotImplementedError(f"Unsupported node: JoinOpCross")
+        raise NotImplementedError("Unsupported node: JoinOpCross")
 
     def visitJoinConstraintClause(self, ctx: HogQLParser.JoinConstraintClauseContext):
         if ctx.USING():
-            raise NotImplementedError(f"Unsupported: JOIN ... USING")
+            raise NotImplementedError("Unsupported: JOIN ... USING")
         column_expr_list = self.visit(ctx.columnExprList())
         if len(column_expr_list) != 1:
-            raise NotImplementedError(f"Unsupported: JOIN ... ON with multiple expressions")
+            raise NotImplementedError("Unsupported: JOIN ... ON with multiple expressions")
         return column_expr_list[0]
 
     def visitSampleClause(self, ctx: HogQLParser.SampleClauseContext):
-        raise NotImplementedError(f"Unsupported node: SampleClause")
+        raise NotImplementedError("Unsupported node: SampleClause")
 
     def visitLimitExpr(self, ctx: HogQLParser.LimitExprContext):
-        raise NotImplementedError(f"Unsupported node: LimitExpr")
+        raise NotImplementedError("Unsupported node: LimitExpr")
 
     def visitOrderExprList(self, ctx: HogQLParser.OrderExprListContext):
         return [self.visit(expr) for expr in ctx.orderExpr()]
@@ -258,52 +258,52 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return ast.OrderExpr(expr=self.visit(ctx.columnExpr()), order=cast(Literal["ASC", "DESC"], order))
 
     def visitRatioExpr(self, ctx: HogQLParser.RatioExprContext):
-        raise NotImplementedError(f"Unsupported node: RatioExpr")
+        raise NotImplementedError("Unsupported node: RatioExpr")
 
     def visitSettingExprList(self, ctx: HogQLParser.SettingExprListContext):
-        raise NotImplementedError(f"Unsupported node: SettingExprList")
+        raise NotImplementedError("Unsupported node: SettingExprList")
 
     def visitSettingExpr(self, ctx: HogQLParser.SettingExprContext):
-        raise NotImplementedError(f"Unsupported node: SettingExpr")
+        raise NotImplementedError("Unsupported node: SettingExpr")
 
     def visitWindowExpr(self, ctx: HogQLParser.WindowExprContext):
-        raise NotImplementedError(f"Unsupported node: WindowExpr")
+        raise NotImplementedError("Unsupported node: WindowExpr")
 
     def visitWinPartitionByClause(self, ctx: HogQLParser.WinPartitionByClauseContext):
-        raise NotImplementedError(f"Unsupported node: WinPartitionByClause")
+        raise NotImplementedError("Unsupported node: WinPartitionByClause")
 
     def visitWinOrderByClause(self, ctx: HogQLParser.WinOrderByClauseContext):
-        raise NotImplementedError(f"Unsupported node: WinOrderByClause")
+        raise NotImplementedError("Unsupported node: WinOrderByClause")
 
     def visitWinFrameClause(self, ctx: HogQLParser.WinFrameClauseContext):
-        raise NotImplementedError(f"Unsupported node: WinFrameClause")
+        raise NotImplementedError("Unsupported node: WinFrameClause")
 
     def visitFrameStart(self, ctx: HogQLParser.FrameStartContext):
-        raise NotImplementedError(f"Unsupported node: FrameStart")
+        raise NotImplementedError("Unsupported node: FrameStart")
 
     def visitFrameBetween(self, ctx: HogQLParser.FrameBetweenContext):
-        raise NotImplementedError(f"Unsupported node: FrameBetween")
+        raise NotImplementedError("Unsupported node: FrameBetween")
 
     def visitWinFrameBound(self, ctx: HogQLParser.WinFrameBoundContext):
-        raise NotImplementedError(f"Unsupported node: WinFrameBound")
+        raise NotImplementedError("Unsupported node: WinFrameBound")
 
     def visitExpr(self, ctx: HogQLParser.ExprContext):
         return self.visit(ctx.columnExpr())
 
     def visitColumnTypeExprSimple(self, ctx: HogQLParser.ColumnTypeExprSimpleContext):
-        raise NotImplementedError(f"Unsupported node: ColumnTypeExprSimple")
+        raise NotImplementedError("Unsupported node: ColumnTypeExprSimple")
 
     def visitColumnTypeExprNested(self, ctx: HogQLParser.ColumnTypeExprNestedContext):
-        raise NotImplementedError(f"Unsupported node: ColumnTypeExprNested")
+        raise NotImplementedError("Unsupported node: ColumnTypeExprNested")
 
     def visitColumnTypeExprEnum(self, ctx: HogQLParser.ColumnTypeExprEnumContext):
-        raise NotImplementedError(f"Unsupported node: ColumnTypeExprEnum")
+        raise NotImplementedError("Unsupported node: ColumnTypeExprEnum")
 
     def visitColumnTypeExprComplex(self, ctx: HogQLParser.ColumnTypeExprComplexContext):
-        raise NotImplementedError(f"Unsupported node: ColumnTypeExprComplex")
+        raise NotImplementedError("Unsupported node: ColumnTypeExprComplex")
 
     def visitColumnTypeExprParam(self, ctx: HogQLParser.ColumnTypeExprParamContext):
-        raise NotImplementedError(f"Unsupported node: ColumnTypeExprParam")
+        raise NotImplementedError("Unsupported node: ColumnTypeExprParam")
 
     def visitColumnExprList(self, ctx: HogQLParser.ColumnExprListContext):
         return [self.visit(c) for c in ctx.columnsExpr()]
@@ -321,7 +321,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visit(ctx.columnExpr())
 
     def visitColumnExprTernaryOp(self, ctx: HogQLParser.ColumnExprTernaryOpContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprTernaryOp")
+        raise NotImplementedError("Unsupported node: ColumnExprTernaryOp")
 
     def visitColumnExprAlias(self, ctx: HogQLParser.ColumnExprAliasContext):
         if ctx.alias():
@@ -331,7 +331,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         elif ctx.STRING_LITERAL():
             alias = parse_string_literal(ctx.STRING_LITERAL())
         else:
-            raise NotImplementedError(f"Must specify an alias.")
+            raise NotImplementedError("Must specify an alias.")
         expr = self.visit(ctx.columnExpr())
 
         if alias in RESERVED_KEYWORDS:
@@ -340,7 +340,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return ast.Alias(expr=expr, alias=alias)
 
     def visitColumnExprExtract(self, ctx: HogQLParser.ColumnExprExtractContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprExtract")
+        raise NotImplementedError("Unsupported node: ColumnExprExtract")
 
     def visitColumnExprNegate(self, ctx: HogQLParser.ColumnExprNegateContext):
         return ast.BinaryOperation(
@@ -354,13 +354,13 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     def visitColumnExprArray(self, ctx: HogQLParser.ColumnExprArrayContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprArray")
+        raise NotImplementedError("Unsupported node: ColumnExprArray")
 
     def visitColumnExprSubstring(self, ctx: HogQLParser.ColumnExprSubstringContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprSubstring")
+        raise NotImplementedError("Unsupported node: ColumnExprSubstring")
 
     def visitColumnExprCast(self, ctx: HogQLParser.ColumnExprCastContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprCast")
+        raise NotImplementedError("Unsupported node: ColumnExprCast")
 
     def visitColumnExprPrecedence1(self, ctx: HogQLParser.ColumnExprPrecedence1Context):
         if ctx.SLASH():
@@ -413,7 +413,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
                 op = ast.CompareOperationType.ILike
         elif ctx.IN():
             if ctx.GLOBAL():
-                raise NotImplementedError(f"Unsupported node: IN GLOBAL")
+                raise NotImplementedError("Unsupported node: IN GLOBAL")
             if ctx.NOT():
                 op = ast.CompareOperationType.NotIn
             else:
@@ -452,19 +452,19 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         )
 
     def visitColumnExprWinFunctionTarget(self, ctx: HogQLParser.ColumnExprWinFunctionTargetContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprWinFunctionTarget")
+        raise NotImplementedError("Unsupported node: ColumnExprWinFunctionTarget")
 
     def visitColumnExprTrim(self, ctx: HogQLParser.ColumnExprTrimContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprTrim")
+        raise NotImplementedError("Unsupported node: ColumnExprTrim")
 
     def visitColumnExprTuple(self, ctx: HogQLParser.ColumnExprTupleContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprTuple")
+        raise NotImplementedError("Unsupported node: ColumnExprTuple")
 
     def visitColumnExprArrayAccess(self, ctx: HogQLParser.ColumnExprArrayAccessContext):
         object = self.visit(ctx.columnExpr(0))
         property = self.visit(ctx.columnExpr(1))
         if not isinstance(property, ast.Constant):
-            raise NotImplementedError(f"Array access must be performed with a constant.")
+            raise NotImplementedError("Array access must be performed with a constant.")
         if isinstance(object, ast.Field):
             return ast.Field(chain=object.chain + [property.value])
 
@@ -473,65 +473,49 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         )
 
     def visitColumnExprBetween(self, ctx: HogQLParser.ColumnExprBetweenContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprBetween")
+        raise NotImplementedError("Unsupported node: ColumnExprBetween")
 
     def visitColumnExprParens(self, ctx: HogQLParser.ColumnExprParensContext):
         return self.visit(ctx.columnExpr())
 
     def visitColumnExprTimestamp(self, ctx: HogQLParser.ColumnExprTimestampContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprTimestamp")
+        raise NotImplementedError("Unsupported node: ColumnExprTimestamp")
 
     def visitColumnExprAnd(self, ctx: HogQLParser.ColumnExprAndContext):
         left = self.visit(ctx.columnExpr(0))
-        if isinstance(left, ast.And):
-            left_array = left.exprs
-        else:
-            left_array = [left]
-
+        left_array = left.exprs if isinstance(left, ast.And) else [left]
         right = self.visit(ctx.columnExpr(1))
-        if isinstance(right, ast.And):
-            right_array = right.exprs
-        else:
-            right_array = [right]
-
+        right_array = right.exprs if isinstance(right, ast.And) else [right]
         return ast.And(exprs=left_array + right_array)
 
     def visitColumnExprOr(self, ctx: HogQLParser.ColumnExprOrContext):
         left = self.visit(ctx.columnExpr(0))
-        if isinstance(left, ast.Or):
-            left_array = left.exprs
-        else:
-            left_array = [left]
-
+        left_array = left.exprs if isinstance(left, ast.Or) else [left]
         right = self.visit(ctx.columnExpr(1))
-        if isinstance(right, ast.Or):
-            right_array = right.exprs
-        else:
-            right_array = [right]
-
+        right_array = right.exprs if isinstance(right, ast.Or) else [right]
         return ast.Or(exprs=left_array + right_array)
 
     def visitColumnExprTupleAccess(self, ctx: HogQLParser.ColumnExprTupleAccessContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprTupleAccess")
+        raise NotImplementedError("Unsupported node: ColumnExprTupleAccess")
 
     def visitColumnExprCase(self, ctx: HogQLParser.ColumnExprCaseContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprCase")
+        raise NotImplementedError("Unsupported node: ColumnExprCase")
 
     def visitColumnExprDate(self, ctx: HogQLParser.ColumnExprDateContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprDate")
+        raise NotImplementedError("Unsupported node: ColumnExprDate")
 
     def visitColumnExprNot(self, ctx: HogQLParser.ColumnExprNotContext):
         return ast.Not(expr=self.visit(ctx.columnExpr()))
 
     def visitColumnExprWinFunction(self, ctx: HogQLParser.ColumnExprWinFunctionContext):
-        raise NotImplementedError(f"Unsupported node: ColumnExprWinFunction")
+        raise NotImplementedError("Unsupported node: ColumnExprWinFunction")
 
     def visitColumnExprIdentifier(self, ctx: HogQLParser.ColumnExprIdentifierContext):
         return self.visit(ctx.columnIdentifier())
 
     def visitColumnExprFunction(self, ctx: HogQLParser.ColumnExprFunctionContext):
         if ctx.columnExprList():
-            raise NotImplementedError(f"Functions that return functions are not supported")
+            raise NotImplementedError("Functions that return functions are not supported")
         name = self.visit(ctx.identifier())
         args = self.visit(ctx.columnArgList()) if ctx.columnArgList() else []
         return ast.Call(name=name, args=args)
@@ -549,7 +533,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     def visitColumnLambdaExpr(self, ctx: HogQLParser.ColumnLambdaExprContext):
-        raise NotImplementedError(f"Unsupported node: ColumnLambdaExpr")
+        raise NotImplementedError("Unsupported node: ColumnLambdaExpr")
 
     def visitColumnIdentifier(self, ctx: HogQLParser.ColumnIdentifierContext):
         if ctx.PLACEHOLDER():
@@ -587,10 +571,10 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return ast.JoinExpr(table=self.visit(ctx.tableExpr()), alias=alias)
 
     def visitTableExprFunction(self, ctx: HogQLParser.TableExprFunctionContext):
-        raise NotImplementedError(f"Unsupported node: TableExprFunction")
+        raise NotImplementedError("Unsupported node: TableExprFunction")
 
     def visitTableFunctionExpr(self, ctx: HogQLParser.TableFunctionExprContext):
-        raise NotImplementedError(f"Unsupported node: TableFunctionExpr")
+        raise NotImplementedError("Unsupported node: TableFunctionExpr")
 
     def visitTableIdentifier(self, ctx: HogQLParser.TableIdentifierContext):
         text = self.visit(ctx.identifier())
@@ -599,16 +583,16 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return [text]
 
     def visitTableArgList(self, ctx: HogQLParser.TableArgListContext):
-        raise NotImplementedError(f"Unsupported node: TableArgList")
+        raise NotImplementedError("Unsupported node: TableArgList")
 
     def visitTableArgExpr(self, ctx: HogQLParser.TableArgExprContext):
-        raise NotImplementedError(f"Unsupported node: TableArgExpr")
+        raise NotImplementedError("Unsupported node: TableArgExpr")
 
     def visitDatabaseIdentifier(self, ctx: HogQLParser.DatabaseIdentifierContext):
         return self.visit(ctx.identifier())
 
     def visitFloatingLiteral(self, ctx: HogQLParser.FloatingLiteralContext):
-        raise NotImplementedError(f"Unsupported node: visitFloatingLiteral")
+        raise NotImplementedError("Unsupported node: visitFloatingLiteral")
 
     def visitNumberLiteral(self, ctx: HogQLParser.NumberLiteralContext):
         text = ctx.getText()
@@ -625,13 +609,13 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
     def visitInterval(self, ctx: HogQLParser.IntervalContext):
-        raise NotImplementedError(f"Unsupported node: Interval")
+        raise NotImplementedError("Unsupported node: Interval")
 
     def visitKeyword(self, ctx: HogQLParser.KeywordContext):
-        raise NotImplementedError(f"Unsupported node: Keyword")
+        raise NotImplementedError("Unsupported node: Keyword")
 
     def visitKeywordForAlias(self, ctx: HogQLParser.KeywordForAliasContext):
-        raise NotImplementedError(f"Unsupported node: KeywordForAlias")
+        raise NotImplementedError("Unsupported node: KeywordForAlias")
 
     def visitAlias(self, ctx: HogQLParser.AliasContext):
         text = ctx.getText()
@@ -650,7 +634,7 @@ class HogQLParseTreeConverter(ParseTreeVisitor):
         return text
 
     def visitIdentifierOrNull(self, ctx: HogQLParser.IdentifierOrNullContext):
-        raise NotImplementedError(f"Unsupported node: IdentifierOrNull")
+        raise NotImplementedError("Unsupported node: IdentifierOrNull")
 
     def visitEnumValue(self, ctx: HogQLParser.EnumValueContext):
-        raise NotImplementedError(f"Unsupported node: EnumValue")
+        raise NotImplementedError("Unsupported node: EnumValue")

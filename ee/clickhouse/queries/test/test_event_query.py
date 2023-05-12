@@ -25,8 +25,9 @@ def _create_cohort(**kwargs):
     name = kwargs.pop("name")
     groups = kwargs.pop("groups")
     is_static = kwargs.pop("is_static", False)
-    cohort = Cohort.objects.create(team=team, name=name, groups=groups, is_static=is_static)
-    return cohort
+    return Cohort.objects.create(
+        team=team, name=name, groups=groups, is_static=is_static
+    )
 
 
 class TestEventQuery(ClickhouseTestMixin, APIBaseTest):
@@ -35,7 +36,7 @@ class TestEventQuery(ClickhouseTestMixin, APIBaseTest):
         self._create_sample_data()
 
     def _create_sample_data(self):
-        distinct_id = "user_one_{}".format(self.team.pk)
+        distinct_id = f"user_one_{self.team.pk}"
         _create_person(distinct_ids=[distinct_id], team=self.team)
 
         _create_event(event="viewed", distinct_id=distinct_id, team=self.team, timestamp="2021-05-01 00:00:00")

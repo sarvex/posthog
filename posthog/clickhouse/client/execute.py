@@ -139,11 +139,11 @@ def query_with_columns(
 
     rows = []
     for row in metrics:
-        result = {}
-        for type_name, value in zip(type_names, row):
-            if type_name not in columns_to_remove:
-                result[columns_to_rename.get(type_name, type_name)] = value
-
+        result = {
+            columns_to_rename.get(type_name, type_name): value
+            for type_name, value in zip(type_names, row)
+            if type_name not in columns_to_remove
+        }
         rows.append(result)
 
     return rows

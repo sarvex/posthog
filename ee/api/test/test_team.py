@@ -184,7 +184,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.organization_membership.level = OrganizationMembership.Level.MEMBER
         self.organization_membership.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"name": "Erinaceus europaeus"})
+        response = self.client.patch(
+            "/api/projects/@current/", {"name": "Erinaceus europaeus"}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -196,7 +198,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.team.access_control = True
         self.team.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"name": "Acherontia atropos"})
+        response = self.client.patch(
+            "/api/projects/@current/", {"name": "Acherontia atropos"}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -205,7 +209,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
     def test_rename_private_project_current_as_org_outsider_forbidden(self):
         self.organization_membership.delete()
 
-        response = self.client.patch(f"/api/projects/@current/", {"name": "Acherontia atropos"})
+        response = self.client.patch(
+            "/api/projects/@current/", {"name": "Acherontia atropos"}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -227,7 +233,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
             team=self.team, parent_membership=self.organization_membership, level=ExplicitTeamMembership.Level.MEMBER
         )
 
-        response = self.client.patch(f"/api/projects/@current/", {"name": "Acherontia atropos"})
+        response = self.client.patch(
+            "/api/projects/@current/", {"name": "Acherontia atropos"}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -237,7 +245,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.organization_membership.level = OrganizationMembership.Level.MEMBER
         self.organization_membership.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": True})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": True}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -247,7 +257,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.organization_membership.level = OrganizationMembership.Level.ADMIN
         self.organization_membership.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": True})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": True}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -260,7 +272,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
             team=self.team, parent_membership=self.organization_membership, level=ExplicitTeamMembership.Level.ADMIN
         )
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": True})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": True}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -272,7 +286,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.team.access_control = True
         self.team.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": False})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": False}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -289,7 +305,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
             team=self.team, parent_membership=self.organization_membership, level=ExplicitTeamMembership.Level.ADMIN
         )
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": False})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": False}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -301,7 +319,9 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.team.access_control = True
         self.team.save()
 
-        response = self.client.patch(f"/api/projects/@current/", {"access_control": False})
+        response = self.client.patch(
+            "/api/projects/@current/", {"access_control": False}
+        )
         self.team.refresh_from_db()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -309,11 +329,12 @@ class TestProjectEnterpriseAPI(APILicensedTest):
 
     def test_can_update_and_retrieve_person_property_names_excluded_from_correlation(self):
         response = self.client.patch(
-            f"/api/projects/@current/", {"correlation_config": {"excluded_person_property_names": ["$os"]}}
+            "/api/projects/@current/",
+            {"correlation_config": {"excluded_person_property_names": ["$os"]}},
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         response_data = response.json()
@@ -328,7 +349,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.organization_membership.level = OrganizationMembership.Level.ADMIN
         self.organization_membership.save()
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -345,7 +366,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.organization_membership.level = OrganizationMembership.Level.MEMBER
         self.organization_membership.save()
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -364,7 +385,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
         self.team.access_control = True
         self.team.save()
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
@@ -381,7 +402,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
             team=self.team, parent_membership=self.organization_membership, level=ExplicitTeamMembership.Level.MEMBER
         )
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -403,7 +424,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
             team=self.team, parent_membership=self.organization_membership, level=ExplicitTeamMembership.Level.ADMIN
         )
 
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -418,14 +439,14 @@ class TestProjectEnterpriseAPI(APILicensedTest):
 
     def test_fetch_team_as_org_outsider(self):
         self.organization_membership.delete()
-        response = self.client.get(f"/api/projects/@current/")
+        response = self.client.get("/api/projects/@current/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.assertEqual(self.not_found_response(), response_data)
 
     def test_fetch_nonexistent_team(self):
-        response = self.client.get(f"/api/projects/234444/")
+        response = self.client.get("/api/projects/234444/")
         response_data = response.json()
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -438,7 +459,7 @@ class TestProjectEnterpriseAPI(APILicensedTest):
 
         # The other team should not be returned as it's restricted for the logged-in user
         with self.assertNumQueries(7):
-            projects_response = self.client.get(f"/api/projects/")
+            projects_response = self.client.get("/api/projects/")
 
         # 9 (above) + 2 below:
         # Used for `metadata`.`taxonomy_set_events_count`: SELECT COUNT(*) FROM "ee_enterpriseeventdefinition" WHERE ...

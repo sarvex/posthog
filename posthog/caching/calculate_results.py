@@ -93,24 +93,22 @@ def calculate_result_by_cache_type(cache_type: CacheType, filter: Filter, team: 
 def _calculate_by_filter(filter: FilterType, team: Team, cache_type: CacheType) -> List[Dict[str, Any]]:
     insight_class = CACHE_TYPE_TO_INSIGHT_CLASS[cache_type]
 
-    if cache_type == CacheType.PATHS:
-        result = insight_class(filter, team).run(filter, team)
-    else:
-        result = insight_class().run(filter, team)
-    return result
+    return (
+        insight_class(filter, team).run(filter, team)
+        if cache_type == CacheType.PATHS
+        else insight_class().run(filter, team)
+    )
 
 
 @timed("update_cache_item_timer.calculate_funnel")
 def _calculate_funnel(filter: Filter, team: Team) -> List[Dict[str, Any]]:
     if filter.funnel_viz_type == FunnelVizType.TRENDS:
-        result = ClickhouseFunnelTrends(team=team, filter=filter).run()
+        return ClickhouseFunnelTrends(team=team, filter=filter).run()
     elif filter.funnel_viz_type == FunnelVizType.TIME_TO_CONVERT:
-        result = ClickhouseFunnelTimeToConvert(team=team, filter=filter).run()
+        return ClickhouseFunnelTimeToConvert(team=team, filter=filter).run()
     else:
         funnel_order_class = get_funnel_order_class(filter)
-        result = funnel_order_class(team=team, filter=filter).run()
-
-    return result
+        return funnel_order_class(team=team, filter=filter).run()
 
 
 def cache_includes_latest_events(
@@ -126,8 +124,7 @@ def cache_includes_latest_events(
     then there's no point re-calculating
     """
 
-    last_refresh = ensure_is_date(payload.get("last_refresh", None))
-    if last_refresh:
+    if last_refresh := ensure_is_date(payload.get("last_refresh", None)):
         event_names = _events_from_filter(filter)
 
         event_last_seen_at = list(
@@ -148,9 +145,10 @@ def _events_from_filter(filter: Union[RetentionFilter, StickinessFilter, PathFil
     so for now we'll just return an empty list and can (dis?)prove that this mechanism is useful
     """
     try:
-        if isinstance(filter, StickinessFilter) or isinstance(filter, Filter):
-            if not filter.actions:
-                return [str(e.id) for e in filter.events]
+        if (
+            isinstance(filter, (StickinessFilter, Filter))
+        ) and not filter.actions:
+            return [str(e.id) for e in filter.events]
 
         return []
     except Exception as exc:

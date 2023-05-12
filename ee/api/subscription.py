@@ -61,10 +61,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        if not self.initial_data:
-            # Create
-            if not attrs.get("dashboard") and not attrs.get("insight"):
-                raise ValidationError("Either dashboard or insight is required for an export.")
+        if (
+            not self.initial_data
+            and not attrs.get("dashboard")
+            and not attrs.get("insight")
+        ):
+            raise ValidationError("Either dashboard or insight is required for an export.")
 
         if attrs.get("dashboard") and attrs["dashboard"].team.id != self.context["team_id"]:
             raise ValidationError({"dashboard": ["This dashboard does not belong to your team."]})

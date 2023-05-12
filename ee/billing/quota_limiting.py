@@ -80,10 +80,7 @@ def org_quota_limited_until(organization: Organization, resource: QuotaResource)
     is_quota_limited = usage + todays_usage >= limit + OVERAGE_BUFFER[resource]
     billing_period_end = round(dateutil.parser.isoparse(organization.usage["period"][1]).timestamp())
 
-    if is_quota_limited and billing_period_end:
-        return billing_period_end
-
-    return None
+    return billing_period_end if is_quota_limited and billing_period_end else None
 
 
 def sync_org_quota_limits(organization: Organization):
@@ -97,9 +94,9 @@ def sync_org_quota_limits(organization: Organization):
         return
 
     for resource in [QuotaResource.EVENTS, QuotaResource.RECORDINGS]:
-        quota_limited_until = org_quota_limited_until(organization, resource)
-
-        if quota_limited_until:
+        if quota_limited_until := org_quota_limited_until(
+            organization, resource
+        ):
             add_limited_team_tokens(resource, {x: quota_limited_until for x in team_tokens})
         else:
             remove_limited_team_tokens(resource, team_tokens)
@@ -127,13 +124,13 @@ def set_org_usage_summary(
 
         if todays_usage:
             resource_usage["todays_usage"] = todays_usage[field]  # type: ignore
-        else:
-            # TRICKY: If we are not explictly setting todays_usage, we want to reset it to 0 IF the incoming new_usage is different
-            if (organization.usage or {}).get(field, {}).get("usage") != resource_usage.get("usage"):
-                resource_usage["todays_usage"] = 0
-            else:
-                resource_usage["todays_usage"] = organization.usage.get(field, {}).get("todays_usage") or 0
+        elif (organization.usage or {}).get(field, {}).get(
+            "usage"
+        ) == resource_usage.get("usage"):
+            resource_usage["todays_usage"] = organization.usage.get(field, {}).get("todays_usage") or 0
 
+        else:
+            resource_usage["todays_usage"] = 0
     has_changed = new_usage != organization.usage
     organization.usage = new_usage
 
@@ -189,9 +186,9 @@ def update_all_org_billing_quotas(dry_run: bool = False) -> Dict[str, Dict[str, 
                 org.save(update_fields=["usage"])
 
             for field in ["events", "recordings"]:
-                quota_limited_until = org_quota_limited_until(org, QuotaResource(field))
-
-                if quota_limited_until:
+                if quota_limited_until := org_quota_limited_until(
+                    org, QuotaResource(field)
+                ):
                     # TODO: Set this rate limit to the end of the billing period
                     quota_limited_orgs[field][org_id] = quota_limited_until
 
@@ -206,18 +203,16 @@ def update_all_org_billing_quotas(dry_run: bool = False) -> Dict[str, Dict[str, 
 
     # Convert the org ids to team tokens
     for team in teams:
-        for field in quota_limited_orgs:
+        for field, value in quota_limited_orgs.items():
             org_id = str(team.organization.id)
-            if org_id in quota_limited_orgs[field]:
+            if org_id in value:
                 quota_limited_teams[field][team.api_token] = quota_limited_orgs[field][org_id]
 
                 # If the team was not previously quota limited, we add it to the list of orgs that were added
                 if team.api_token not in previously_quota_limited_team_tokens[field]:
                     orgs_with_changes.add(org_id)
-            else:
-                # If the team was previously quota limited, we add it to the list of orgs that were removed
-                if team.api_token in previously_quota_limited_team_tokens[field]:
-                    orgs_with_changes.add(org_id)
+            elif team.api_token in previously_quota_limited_team_tokens[field]:
+                orgs_with_changes.add(org_id)
 
     for org_id in orgs_with_changes:
         properties = {
@@ -230,7 +225,7 @@ def update_all_org_billing_quotas(dry_run: bool = False) -> Dict[str, Dict[str, 
         )
 
     if not dry_run:
-        for field in quota_limited_teams:
-            replace_limited_team_tokens(QuotaResource(field), quota_limited_teams[field])
+        for field, value_ in quota_limited_teams.items():
+            replace_limited_team_tokens(QuotaResource(field), value_)
 
     return quota_limited_orgs

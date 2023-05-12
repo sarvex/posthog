@@ -51,12 +51,7 @@ def get_funnel_ok(client: Client, team_id: int, request: FunnelRequest) -> Dict[
 
     assert response.status_code == 200, response.content
     res = response.json()
-    final = {}
-
-    for step in res["result"]:
-        final[step["name"]] = step
-
-    return final
+    return {step["name"]: step for step in res["result"]}
 
 
 def get_funnel_actors_ok(client: Client, url: str):

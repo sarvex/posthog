@@ -105,8 +105,9 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     # Sync all Organization.available_features every hour, only for billing v1 orgs
     sender.add_periodic_task(crontab(minute=30, hour="*"), sync_all_organization_available_features.s())
 
-    sync_insight_cache_states_schedule = get_crontab(settings.SYNC_INSIGHT_CACHE_STATES_SCHEDULE)
-    if sync_insight_cache_states_schedule:
+    if sync_insight_cache_states_schedule := get_crontab(
+        settings.SYNC_INSIGHT_CACHE_STATES_SCHEDULE
+    ):
         sender.add_periodic_task(
             sync_insight_cache_states_schedule, sync_insight_cache_states_task.s(), name="sync insight cache states"
         )
@@ -164,9 +165,9 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
             crontab(hour=4, minute=randrange(0, 40)), clickhouse_send_license_usage.s()
         )  # again a few hours later just to make sure
 
-        materialize_columns_crontab = get_crontab(settings.MATERIALIZE_COLUMNS_SCHEDULE_CRON)
-
-        if materialize_columns_crontab:
+        if materialize_columns_crontab := get_crontab(
+            settings.MATERIALIZE_COLUMNS_SCHEDULE_CRON
+        ):
             sender.add_periodic_task(
                 materialize_columns_crontab, clickhouse_materialize_columns.s(), name="clickhouse materialize columns"
             )
@@ -425,7 +426,11 @@ def clickhouse_row_count():
             QUERY = """select count(1) freq from {table};"""
             query = QUERY.format(table=table)
             rows = sync_execute(query)[0][0]
-            statsd.gauge(f"posthog_celery_clickhouse_table_row_count", rows, tags={"table": table})
+            statsd.gauge(
+                "posthog_celery_clickhouse_table_row_count",
+                rows,
+                tags={"table": table},
+            )
         except:
             pass
 
@@ -479,7 +484,11 @@ def clickhouse_part_count():
     """
     rows = sync_execute(QUERY)
     for (table, parts) in rows:
-        statsd.gauge(f"posthog_celery_clickhouse_table_parts_count", parts, tags={"table": table})
+        statsd.gauge(
+            "posthog_celery_clickhouse_table_parts_count",
+            parts,
+            tags={"table": table},
+        )
 
 
 @app.task(ignore_result=True)
@@ -499,7 +508,11 @@ def clickhouse_mutation_count():
     """
     rows = sync_execute(QUERY)
     for (table, muts) in rows:
-        statsd.gauge(f"posthog_celery_clickhouse_table_mutations_count", muts, tags={"table": table})
+        statsd.gauge(
+            "posthog_celery_clickhouse_table_mutations_count",
+            muts,
+            tags={"table": table},
+        )
 
 
 @app.task(ignore_result=True)
@@ -529,7 +542,7 @@ def redis_celery_queue_depth():
 
     try:
         llen = get_client().llen("celery")
-        statsd.gauge(f"posthog_celery_queue_depth", llen)
+        statsd.gauge("posthog_celery_queue_depth", llen)
     except:
         # if we can't connect to statsd don't complain about it.
         # not every installation will have statsd available
@@ -633,7 +646,7 @@ def count_teams_with_no_property_query_count():
 
             count = cursor.fetchone()
             statsd.gauge(
-                f"calculate_event_property_usage.teams_with_no_property_query_count",
+                "calculate_event_property_usage.teams_with_no_property_query_count",
                 count[0],
             )
         except Exception as exc:
@@ -681,11 +694,10 @@ def verify_persons_data_in_sync():
 def recompute_materialized_columns_enabled() -> bool:
     from posthog.models.instance_setting import get_instance_setting
 
-    if get_instance_setting("MATERIALIZED_COLUMNS_ENABLED") and get_instance_setting(
-        "COMPUTE_MATERIALIZED_COLUMNS_ENABLED"
-    ):
-        return True
-    return False
+    return bool(
+        get_instance_setting("MATERIALIZED_COLUMNS_ENABLED")
+        and get_instance_setting("COMPUTE_MATERIALIZED_COLUMNS_ENABLED")
+    )
 
 
 @app.task(ignore_result=True)

@@ -59,15 +59,15 @@ def calculate_probability_of_winning_for_target(target_variant: Variant, other_v
 
 
 def probability_B_beats_A(A_success: int, A_failure: int, B_success: int, B_failure: int) -> Probability:
-    total: Probability = 0
-    for i in range(B_success):
-        total += exp(
+    total: Probability = sum(
+        exp(
             logbeta(A_success + i, A_failure + B_failure)
             - log(B_failure + i)
             - logbeta(1 + i, B_failure)
             - logbeta(A_success, A_failure)
         )
-
+        for i in range(B_success)
+    )
     return total
 
 
@@ -405,16 +405,16 @@ def calculate_probability_of_winning_for_target_count_data(
 
 
 def probability_B_beats_A_count_data(A_count: int, A_exposure: float, B_count: int, B_exposure: float) -> Probability:
-    total: Probability = 0
-    for i in range(B_count):
-        total += exp(
+    total: Probability = sum(
+        exp(
             i * log(B_exposure)
             + A_count * log(A_exposure)
             - (i + A_count) * log(B_exposure + A_exposure)
             - log(i + A_count)
             - logbeta(i + 1, A_count)
         )
-
+        for i in range(B_count)
+    )
     return total
 
 

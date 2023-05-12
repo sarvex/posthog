@@ -46,12 +46,7 @@ def calculate_rolling_average(threshold_metric: Dict, team: Team, timezone: str)
     trends_query = Trends()
     result = trends_query.run(filter, team)
 
-    if not len(result):
-        return False
-
-    data = result[0]["data"]
-
-    return sum(data) / rolling_average_days
+    return sum(result[0]["data"]) / rolling_average_days if len(result) else False
 
 
 def check_condition(rollback_condition: Dict, feature_flag: FeatureFlag) -> bool:

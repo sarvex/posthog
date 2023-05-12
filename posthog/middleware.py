@@ -61,8 +61,7 @@ class AllowIPMiddleware:
     def extract_client_ip(self, request: HttpRequest):
         client_ip = request.META["REMOTE_ADDR"]
         if getattr(settings, "USE_X_FORWARDED_HOST", False):
-            forwarded_for = self.get_forwarded_for(request)
-            if forwarded_for:
+            if forwarded_for := self.get_forwarded_for(request):
                 closest_proxy = client_ip
                 client_ip = forwarded_for.pop(0)
                 if settings.TRUST_ALL_PROXIES:
@@ -129,8 +128,7 @@ class AutoProjectMiddleware:
             target_queryset = self.get_target_queryset(request)
             if target_queryset is not None:
                 self.switch_team_if_needed_and_possible(request, target_queryset)
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
     def get_target_queryset(self, request: HttpRequest) -> Optional[QuerySet]:
         path_parts = request.path.strip("/").split("/")
@@ -217,9 +215,7 @@ class CHQueries:
     def _get_param(self, request: HttpRequest, name: str):
         if name in request.GET:
             return request.GET[name]
-        if name in request.POST:
-            return request.POST[name]
-        return None
+        return request.POST[name] if name in request.POST else None
 
 
 class QueryTimeCountingMiddleware:
@@ -267,7 +263,7 @@ class ShortCircuitMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest):
-        if request.path == "/decide/" or request.path == "/decide":
+        if request.path in ["/decide/", "/decide"]:
             try:
                 # :KLUDGE: Manually tag ClickHouse queries as CHMiddleware is skipped
                 tag_queries(

@@ -498,10 +498,14 @@ def create_feature_flag_dashboard(feature_flag, dashboard: Dashboard) -> None:
     _create_tile_for_insight(
         dashboard,
         name="Feature Flag Called Total Volume",
-        description="Shows the number of total calls made on feature flag with key: " + feature_flag.key,
+        description=f"Shows the number of total calls made on feature flag with key: {feature_flag.key}",
         filters={
             TREND_FILTER_TYPE_EVENTS: [
-                {"id": "$feature_flag_called", "name": "$feature_flag_called", "type": TREND_FILTER_TYPE_EVENTS}
+                {
+                    "id": "$feature_flag_called",
+                    "name": "$feature_flag_called",
+                    "type": TREND_FILTER_TYPE_EVENTS,
+                }
             ],
             INTERVAL: "day",
             INSIGHT: INSIGHT_TRENDS,
@@ -513,7 +517,11 @@ def create_feature_flag_dashboard(feature_flag, dashboard: Dashboard) -> None:
                     {
                         "type": "AND",
                         "values": [
-                            {"key": "$feature_flag", "type": "event", "value": feature_flag.key},
+                            {
+                                "key": "$feature_flag",
+                                "type": "event",
+                                "value": feature_flag.key,
+                            },
                         ],
                     }
                 ],
@@ -522,7 +530,15 @@ def create_feature_flag_dashboard(feature_flag, dashboard: Dashboard) -> None:
             FILTER_TEST_ACCOUNTS: False,
         },
         layouts={
-            "sm": {"i": "21", "x": 0, "y": 0, "w": 6, "h": 5, "minW": 3, "minH": 5},
+            "sm": {
+                "i": "21",
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 5,
+                "minW": 3,
+                "minH": 5,
+            },
             "xs": {
                 "w": 1,
                 "h": 5,

@@ -37,8 +37,9 @@ def _create_cohort(**kwargs):
     name = kwargs.pop("name")
     groups = kwargs.pop("groups")
     is_static = kwargs.pop("is_static", False)
-    cohort = Cohort.objects.create(team=team, name=name, groups=groups, is_static=is_static)
-    return cohort
+    return Cohort.objects.create(
+        team=team, name=name, groups=groups, is_static=is_static
+    )
 
 
 class TestCohortQuery(ClickhouseTestMixin, BaseTest):

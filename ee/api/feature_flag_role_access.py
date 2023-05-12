@@ -38,10 +38,9 @@ class FeatureFlagRoleAccessPermissions(BasePermission):
         except FeatureFlag.DoesNotExist:
             raise exceptions.NotFound("Feature flag not found.")
 
-        has_role_membership_with_access = request.user.role_memberships.filter(
+        return request.user.role_memberships.filter(
             role__feature_flags_access_level=OrganizationResourceAccess.AccessLevel.CAN_ALWAYS_EDIT
         ).exists()
-        return has_role_membership_with_access
 
 
 class FeatureFlagRoleAccessSerializer(serializers.ModelSerializer):

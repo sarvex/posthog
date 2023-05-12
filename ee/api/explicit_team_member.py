@@ -80,15 +80,16 @@ class ExplicitTeamMemberSerializer(serializers.ModelSerializer, UserPermissionsS
 
         if membership_being_accessed is not None:
             # Update-only checks
-            if membership_being_accessed.parent_membership.user_id != requesting_user.id:
-                # Requesting user updating someone else
-                if membership_being_accessed.level > requesting_level:
-                    raise exceptions.PermissionDenied("You can only edit others with level lower or equal to you.")
-            else:
+            if (
+                membership_being_accessed.parent_membership.user_id
+                == requesting_user.id
+            ):
                 # Requesting user updating themselves
                 if new_level is not None:
                     raise exceptions.PermissionDenied("You can't set your own access level.")
 
+            elif membership_being_accessed.level > requesting_level:
+                raise exceptions.PermissionDenied("You can only edit others with level lower or equal to you.")
         return attrs
 
 

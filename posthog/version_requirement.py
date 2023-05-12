@@ -70,18 +70,11 @@ def get_redis_version() -> Version:
 
 
 def version_string_to_semver(version: str) -> Version:
-    minor = 0
-    patch = 0
-
     # remove e.g. `-alpha`, Postgres metadata (`11.13 (Ubuntu 11.13-2.heroku1+1)`), etc
     version_parts = version.split("(")[0].split("-")[0].split(".")
 
     major = int(version_parts[0])
 
-    if len(version_parts) > 1:
-        minor = int(version_parts[1])
-
-    if len(version_parts) > 2:
-        patch = int(version_parts[2])
-
+    minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+    patch = int(version_parts[2]) if len(version_parts) > 2 else 0
     return Version(major=major, minor=minor, patch=patch)

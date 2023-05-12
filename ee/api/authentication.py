@@ -93,12 +93,14 @@ class MultitenantSAMLAuth(SAMLAuth):
         Fetches a specific attribute from the SAML response, attempting with multiple different attribute names.
         We attempt multiple attribute names to make it easier for admins to configure SAML (less configuration to set).
         """
-        output = None
-        for _attr in attribute_names:
-            if _attr in response_attributes:
-                output = response_attributes[_attr]
-                break
-
+        output = next(
+            (
+                response_attributes[_attr]
+                for _attr in attribute_names
+                if _attr in response_attributes
+            ),
+            None,
+        )
         if not output and not optional:
             raise AuthMissingParameter("saml", attribute_names[0])
 

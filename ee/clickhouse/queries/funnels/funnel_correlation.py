@@ -129,7 +129,7 @@ class FunnelCorrelation:
         }
         # NOTE: we always use the final matching event for the recording because this
         # is the the right event for both drop off and successful funnels
-        filter_data.update({"include_final_matching_events": self._filter.include_recordings})
+        filter_data["include_final_matching_events"] = self._filter.include_recordings
         filter = Filter(data=filter_data, hogql_context=self._filter.hogql_context)
 
         funnel_order_actor_class = get_funnel_order_actor_class(filter)
@@ -163,7 +163,7 @@ class FunnelCorrelation:
                     if not groups_on_events_querying_enabled():
                         continue
 
-                    if "$all" == property_name:
+                    if property_name == "$all":
                         return [f"group{self._filter.aggregation_group_type_index}_properties"]
 
                     possible_mat_col = mat_event_cols.get(
@@ -175,25 +175,24 @@ class FunnelCorrelation:
                         props_to_include.append(f"group{self._filter.aggregation_group_type_index}_properties")
 
                 else:
-                    if "$all" == property_name:
-                        return [f"person_properties"]
+                    if property_name == "$all":
+                        return ["person_properties"]
 
                     possible_mat_col = mat_event_cols.get((property_name, "person_properties"))
 
                     if possible_mat_col is not None:
                         props_to_include.append(possible_mat_col)
                     else:
-                        props_to_include.append(f"person_properties")
+                        props_to_include.append("person_properties")
 
         return props_to_include
 
     def support_autocapture_elements(self) -> bool:
-        if (
-            self._filter.correlation_type == FunnelCorrelationType.EVENT_WITH_PROPERTIES
+        return (
+            self._filter.correlation_type
+            == FunnelCorrelationType.EVENT_WITH_PROPERTIES
             and AUTOCAPTURE_EVENT in self._filter.correlation_event_names
-        ):
-            return True
-        return False
+        )
 
     def get_contingency_table_query(self) -> Tuple[str, Dict[str, Any]]:
         """
@@ -291,7 +290,7 @@ class FunnelCorrelation:
                 tuple(prop_key, prop_value) as prop
             """
         else:
-            array_join_query = f"""
+            array_join_query = """
                 arrayJoin(JSONExtractKeysAndValues(properties, 'String')) as prop
             """
 
@@ -427,7 +426,7 @@ class FunnelCorrelation:
     def _get_aggregation_target_join_query(self) -> str:
 
         if self._team.person_on_events_querying_enabled:
-            aggregation_person_join = f"""
+            aggregation_person_join = """
                 JOIN funnel_actors as actors
                     ON event.person_id = actors.actor_id
             """
@@ -492,23 +491,22 @@ class FunnelCorrelation:
         """
 
     def _get_aggregation_join_query(self):
-        if self._filter.aggregation_group_type_index is None:
-            if self._team.person_on_events_querying_enabled and groups_on_events_querying_enabled():
-                return "", {}
+        if self._filter.aggregation_group_type_index is not None:
+            return GroupsJoinQuery(self._filter, self._team.pk, join_key="funnel_actors.actor_id").get_join_query()
+        if self._team.person_on_events_querying_enabled and groups_on_events_querying_enabled():
+            return "", {}
 
-            person_query, person_query_params = PersonQuery(
-                self._filter, self._team.pk, EnterpriseColumnOptimizer(self._filter, self._team.pk)
-            ).get_query()
+        person_query, person_query_params = PersonQuery(
+            self._filter, self._team.pk, EnterpriseColumnOptimizer(self._filter, self._team.pk)
+        ).get_query()
 
-            return (
-                f"""
+        return (
+            f"""
                 JOIN ({person_query}) person
                     ON person.id = funnel_actors.actor_id
             """,
-                person_query_params,
-            )
-        else:
-            return GroupsJoinQuery(self._filter, self._team.pk, join_key="funnel_actors.actor_id").get_join_query()
+            person_query_params,
+        )
 
     def _get_properties_prop_clause(self):
 
@@ -532,41 +530,45 @@ class FunnelCorrelation:
             """,
                 {},
             )
-        else:
-            person_property_expressions = []
-            person_property_params = {}
-            for index, property_name in enumerate(cast(list, self._filter.correlation_property_names)):
-                param_name = f"property_name_{index}"
-                if self._filter.aggregation_group_type_index is not None:
-                    expression, _ = get_property_string_expr(
-                        "groups" if not self._team.person_on_events_querying_enabled else "events",
-                        property_name,
-                        f"%({param_name})s",
-                        aggregation_properties_alias,
-                        materialised_table_column=aggregation_properties_alias,
-                    )
-                else:
-                    expression, _ = get_property_string_expr(
-                        "person" if not self._team.person_on_events_querying_enabled else "events",
-                        property_name,
-                        f"%({param_name})s",
-                        aggregation_properties_alias,
-                        materialised_table_column=aggregation_properties_alias
-                        if self._team.person_on_events_querying_enabled
-                        else "properties",
-                    )
-                person_property_params[param_name] = property_name
-                person_property_expressions.append(expression)
+        person_property_expressions = []
+        person_property_params = {}
+        for index, property_name in enumerate(cast(list, self._filter.correlation_property_names)):
+            param_name = f"property_name_{index}"
+            expression, _ = (
+                get_property_string_expr(
+                    "groups"
+                    if not self._team.person_on_events_querying_enabled
+                    else "events",
+                    property_name,
+                    f"%({param_name})s",
+                    aggregation_properties_alias,
+                    materialised_table_column=aggregation_properties_alias,
+                )
+                if self._filter.aggregation_group_type_index is not None
+                else get_property_string_expr(
+                    "person"
+                    if not self._team.person_on_events_querying_enabled
+                    else "events",
+                    property_name,
+                    f"%({param_name})s",
+                    aggregation_properties_alias,
+                    materialised_table_column=aggregation_properties_alias
+                    if self._team.person_on_events_querying_enabled
+                    else "properties",
+                )
+            )
+            person_property_params[param_name] = property_name
+            person_property_expressions.append(expression)
 
-            return (
-                f"""
+        return (
+            f"""
                 arrayJoin(arrayZip(
                         %(property_names)s,
                         [{','.join(person_property_expressions)}]
                     )) as prop
             """,
-                person_property_params,
-            )
+            person_property_params,
+        )
 
     def _get_funnel_step_names(self):
         events: Set[Union[int, str]] = set()
@@ -646,13 +648,10 @@ class FunnelCorrelation:
         if not success_total or not failure_total:
             return [], True
 
-        skewed_totals = False
-
-        # If the ratio is greater than 1:10, then we have a skewed result, so we should
-        # warn the user.
-        if success_total / failure_total > 10 or failure_total / success_total > 10:
-            skewed_totals = True
-
+        skewed_totals = (
+            success_total / failure_total > 10
+            or failure_total / success_total > 10
+        )
         odds_ratios = [
             get_entity_odds_ratio(event_stats, FunnelCorrelation.PRIOR_COUNT)
             for event_stats in event_contingency_tables
@@ -826,9 +825,7 @@ class FunnelCorrelation:
     def get_funnel_actors_cte(self) -> Tuple[str, Dict[str, Any]]:
         extra_fields = ["steps", "final_timestamp", "first_timestamp"]
 
-        for prop in self.properties_to_include:
-            extra_fields.append(prop)
-
+        extra_fields.extend(iter(self.properties_to_include))
         return self._funnel_actors_generator.actor_query(limit_actors=False, extra_fields=extra_fields)
 
     @staticmethod
@@ -840,12 +837,14 @@ class FunnelCorrelation:
 
         total_count = event_contingency_table.success_total + event_contingency_table.failure_total
 
-        if event_contingency_table.visited.success_count + event_contingency_table.visited.failure_count < min(
-            FunnelCorrelation.MIN_PERSON_COUNT, FunnelCorrelation.MIN_PERSON_PERCENTAGE * total_count
-        ):
-            return True
-
-        return False
+        return (
+            event_contingency_table.visited.success_count
+            + event_contingency_table.visited.failure_count
+            < min(
+                FunnelCorrelation.MIN_PERSON_COUNT,
+                FunnelCorrelation.MIN_PERSON_PERCENTAGE * total_count,
+            )
+        )
 
     def serialize_event_odds_ratio(self, odds_ratio: EventOddsRatio) -> EventOddsRatioSerialized:
         event_definition = self.serialize_event_with_property(event=odds_ratio["event"])

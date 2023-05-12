@@ -53,10 +53,13 @@ class TestMaterializedColumnsAnalyze(ClickhouseTestMixin, BaseTest):
             [
                 {
                     "event": "some-event",
-                    "distinct_id": f"user_id",
+                    "distinct_id": "user_id",
                     "team": self.team,
                     "timestamp": "2021-05-01 00:00:00",
-                    "person_properties": {"person_prop": "something", "another_person_prop": "something"},
+                    "person_properties": {
+                        "person_prop": "something",
+                        "another_person_prop": "something",
+                    },
                     "group0_properties": {"group_prop": "something"},
                     "group2_properties": {"group_prop": "something2"},
                 }

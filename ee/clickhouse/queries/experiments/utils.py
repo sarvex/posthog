@@ -13,7 +13,7 @@ def requires_flag_warning(filter: Filter, team: Team) -> bool:
     query_date_range = QueryDateRange(filter=filter, team=team, should_round=False)
     parsed_date_from, date_from_params = query_date_range.date_from
     parsed_date_to, date_to_params = query_date_range.date_to
-    date_params.update(date_from_params)
+    date_params |= date_from_params
     date_params.update(date_to_params)
 
     date_query = f"""
@@ -31,7 +31,7 @@ def requires_flag_warning(filter: Filter, team: Team) -> bool:
         else:
             events.add(entity.id)
 
-    entity_query = f"AND event IN %(events_list)s"
+    entity_query = "AND event IN %(events_list)s"
     entity_params = {"events_list": sorted(list(events))}
 
     events_result = sync_execute(

@@ -48,7 +48,7 @@ class TestPropFormat(ClickhouseTestMixin, BaseTest):
             hogql_context=filter.hogql_context,
             **kwargs,
         )
-        final_query = "SELECT uuid FROM events WHERE team_id = %(team_id)s {}".format(query)
+        final_query = f"SELECT uuid FROM events WHERE team_id = %(team_id)s {query}"
         return sync_execute(final_query, {**params, **filter.hogql_context.values, "team_id": self.team.pk})
 
     def test_prop_person(self):
@@ -1237,7 +1237,7 @@ def test_prop_filter_json_extract_person_on_events_materialized(
 
     query, params = prop_filter_json_extract(property, 0, allow_denormalized_props=True)
     # this query uses the `properties` column, thus the materialized column is different.
-    assert ("JSON" in query) or ("AND 1 = 2" == query)
+    assert "JSON" in query or query == "AND 1 = 2"
 
     query, params = prop_filter_json_extract(
         property, 0, allow_denormalized_props=True, use_event_column="group2_properties"

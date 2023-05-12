@@ -61,10 +61,8 @@ class PremiumMultiprojectPermissions(permissions.BasePermission):
             ):
                 return False
 
-            # in any other case, we're good to go
-            return True
-        else:
-            return True
+        # in any other case, we're good to go
+        return True
 
 
 class CachingTeamSerializer(serializers.ModelSerializer):
@@ -173,9 +171,10 @@ class TeamSerializer(serializers.ModelSerializer, UserPermissionsSerializerMixin
             if org_membership.level < OrganizationMembership.Level.ADMIN:
                 raise exceptions.PermissionDenied(OrganizationAdminAnyPermissions.message)
 
-        if "session_recording_version" in attrs:
-            if attrs["session_recording_version"] not in ["v1", "v2"]:
-                raise exceptions.ValidationError("Invalid session recording version")
+        if "session_recording_version" in attrs and attrs[
+            "session_recording_version"
+        ] not in ["v1", "v2"]:
+            raise exceptions.ValidationError("Invalid session recording version")
 
         return super().validate(attrs)
 
@@ -203,8 +202,7 @@ class TeamSerializer(serializers.ModelSerializer, UserPermissionsSerializerMixin
         if "timezone" in validated_data and validated_data["timezone"] != instance.timezone:
             self._handle_timezone_update(instance)
 
-        updated_team = super().update(instance, validated_data)
-        return updated_team
+        return super().update(instance, validated_data)
 
 
 class TeamViewSet(AnalyticsDestroyModelMixin, viewsets.ModelViewSet):
@@ -250,7 +248,7 @@ class TeamViewSet(AnalyticsDestroyModelMixin, viewsets.ModelViewSet):
                 self.organization = organization
                 if "is_demo" not in self.request.data or not self.request.data["is_demo"]:
                     base_permissions.append(OrganizationAdminWritePermissions())
-                elif "is_demo" in self.request.data:
+                else:
                     base_permissions.append(OrganizationMemberPermissions())
             elif self.action != "list":
                 # Skip TeamMemberAccessPermission for list action, as list is serialized with limited TeamBasicSerializer

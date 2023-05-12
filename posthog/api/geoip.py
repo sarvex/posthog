@@ -50,8 +50,8 @@ def get_geoip_properties(ip_address: Optional[str]) -> Dict[str, str]:
         logger.exception(f"geoIP computation error: {e}")
         return {}
 
-    properties = {}
-    for key, value in geoip_properties.items():
-        if value and key in VALID_GEOIP_PROPERTIES:
-            properties[f"$geoip_{key}"] = value
-    return properties
+    return {
+        f"$geoip_{key}": value
+        for key, value in geoip_properties.items()
+        if value and key in VALID_GEOIP_PROPERTIES
+    }

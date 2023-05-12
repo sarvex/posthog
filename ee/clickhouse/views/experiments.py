@@ -110,8 +110,9 @@ class ExperimentSerializer(serializers.ModelSerializer):
         feature_flag_serializer.is_valid(raise_exception=True)
         feature_flag = feature_flag_serializer.save()
 
-        experiment = Experiment.objects.create(team=team, feature_flag=feature_flag, **validated_data)
-        return experiment
+        return Experiment.objects.create(
+            team=team, feature_flag=feature_flag, **validated_data
+        )
 
     def update(self, instance: Experiment, validated_data: dict, *args: Any, **kwargs: Any) -> Experiment:
         has_start_date = validated_data.get("start_date") is not None
@@ -176,11 +177,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
         if instance.is_draft and has_start_date:
             feature_flag.active = True
             feature_flag.save()
-            return super().update(instance, validated_data)
-        else:
-            # Not a draft, doesn't have start date
-            # Or draft without start date
-            return super().update(instance, validated_data)
+        return super().update(instance, validated_data)
 
 
 class ClickhouseExperimentsViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):

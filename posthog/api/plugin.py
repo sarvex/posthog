@@ -51,13 +51,11 @@ SECRET_FIELD_VALUE = "**************** POSTHOG SECRET FIELD ****************"
 def _update_plugin_attachments(request: request.Request, plugin_config: PluginConfig):
     user = cast(User, request.user)
     for key, file in request.FILES.items():
-        match = re.match(r"^add_attachment\[([^]]+)\]$", key)
-        if match:
-            _update_plugin_attachment(plugin_config, match.group(1), file, user)
+        if match := re.match(r"^add_attachment\[([^]]+)\]$", key):
+            _update_plugin_attachment(plugin_config, match[1], file, user)
     for key, _file in request.POST.items():
-        match = re.match(r"^remove_attachment\[([^]]+)\]$", key)
-        if match:
-            _update_plugin_attachment(plugin_config, match.group(1), None, user)
+        if match := re.match(r"^remove_attachment\[([^]]+)\]$", key):
+            _update_plugin_attachment(plugin_config, match[1], None, user)
 
 
 def get_plugin_config_changes(old_config: Dict[str, Any], new_config: Dict[str, Any], secret_fields=[]) -> List[Change]:
@@ -231,9 +229,7 @@ class PluginSerializer(serializers.ModelSerializer):
         if validated_data.get("is_global") and not can_globally_manage_plugins(validated_data["organization_id"]):
             raise PermissionDenied("This organization can't manage global plugins!")
 
-        plugin = Plugin.objects.install(**validated_data)
-
-        return plugin
+        return Plugin.objects.install(**validated_data)
 
     def update(self, plugin: Plugin, validated_data: Dict, *args: Any, **kwargs: Any) -> Plugin:  # type: ignore
         context_organization = self.context.get("organization") or Organization.objects.get(
@@ -263,12 +259,11 @@ class PluginViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
         queryset = super().get_queryset()
         queryset = queryset.select_related("organization")
 
-        if self.action == "get" or self.action == "list":
+        if self.action in ["get", "list"]:
             if can_install_plugins(self.organization) or can_configure_plugins(self.organization):
                 return queryset
-        else:
-            if can_install_plugins(self.organization):
-                return queryset
+        elif can_install_plugins(self.organization):
+            return queryset
         return queryset.none()
 
     def get_plugin_with_permissions(self, reason="installation"):
@@ -308,18 +303,20 @@ class PluginViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
     @action(methods=["GET"], detail=True)
     def source(self, request: request.Request, **kwargs):
         plugin = self.get_plugin_with_permissions(reason="source editing")
-        response: Dict[str, str] = {}
-        for source in PluginSourceFile.objects.filter(plugin=plugin):
-            response[source.filename] = source.source
+        response: Dict[str, str] = {
+            source.filename: source.source
+            for source in PluginSourceFile.objects.filter(plugin=plugin)
+        }
         return Response(response)
 
     @action(methods=["PATCH"], detail=True)
     def update_source(self, request: request.Request, **kwargs):
         plugin = self.get_plugin_with_permissions(reason="source editing")
-        sources: Dict[str, PluginSourceFile] = {}
         performed_changes = False
-        for source in PluginSourceFile.objects.filter(plugin=plugin):
-            sources[source.filename] = source
+        sources: Dict[str, PluginSourceFile] = {
+            source.filename: source
+            for source in PluginSourceFile.objects.filter(plugin=plugin)
+        }
         for key, value in request.data.items():
             if key not in sources:
                 performed_changes = True
@@ -337,10 +334,9 @@ class PluginViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
                     sources[key].transpiled = None
                     sources[key].error = None
                     sources[key].save()
-        response: Dict[str, str] = {}
-        for _, source in sources.items():
-            response[source.filename] = source.source
-
+        response: Dict[str, str] = {
+            source.filename: source.source for source in sources.values()
+        }
         # Update values from plugin.json, if one exists
         if response.get("plugin.json"):
             plugin_json = json.loads(response["plugin.json"])
@@ -655,7 +651,7 @@ class PluginConfigViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
                 "pluginConfigTeam": self.team.pk,
             }
         )
-        sql = f"SELECT graphile_worker.add_job('pluginJob', %s)"
+        sql = "SELECT graphile_worker.add_job('pluginJob', %s)"
         params = [payload_json]
         try:
             connection = connections["graphile"] if "graphile" in connections else connections["default"]
@@ -703,9 +699,11 @@ class PluginConfigViewSet(StructuredViewSetMixin, viewsets.ModelViewSet):
 
 
 def _get_secret_fields_for_plugin(plugin: Plugin) -> Set[str]:
-    # A set of keys for config fields that have secret = true
-    secret_fields = {field["key"] for field in plugin.config_schema if "secret" in field and field["secret"]}
-    return secret_fields
+    return {
+        field["key"]
+        for field in plugin.config_schema
+        if "secret" in field and field["secret"]
+    }
 
 
 class LegacyPluginConfigViewSet(PluginConfigViewSet):

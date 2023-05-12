@@ -696,8 +696,7 @@ def get_retention(client: Client, team_id: int, request: RetentionRequest):
 
 def get_retention_people(client: Client, team_id: int, request: RetentionRequest):
     return client.get(
-        f"/api/person/retention/",
-        # NOTE: for get requests we need to JSON encode non-scalars
+        "/api/person/retention/",
         data=encode_get_request_params(asdict(request)),
     )
 

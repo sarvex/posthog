@@ -71,8 +71,9 @@ def health(request):
 
 
 def stats(request):
-    stats_response: Dict[str, Union[int, str]] = {}
-    stats_response["worker_heartbeat"] = get_celery_heartbeat()
+    stats_response: Dict[str, Union[int, str]] = {
+        "worker_heartbeat": get_celery_heartbeat()
+    }
     return JsonResponse(stats_response)
 
 

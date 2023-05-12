@@ -68,18 +68,20 @@ class TestPrompt(APIBaseTest):
     def setUpTestData(cls):
         super().setUpTestData()
 
-    def setUp(cls):
-        distinct_id_user = User.objects.create_and_join(cls.organization, "distinct_id_user@posthog.com", None)
+    def setUp(self):
+        distinct_id_user = User.objects.create_and_join(
+            self.organization, "distinct_id_user@posthog.com", None
+        )
         distinct_id_user.distinct_id = "distinct_id"
         distinct_id_user.save()
-        cls.user = distinct_id_user
+        self.user = distinct_id_user
 
     @freeze_time("2022-08-25T22:09:14.252Z")
     def test_my_prompts(self):
         self.client.force_login(self.user)
         _setup_prompts()
         # receive only the one sequence which doesn't have prerequisites
-        response = self.client.patch(f"/api/prompts/my_prompts", {}, format="json")
+        response = self.client.patch("/api/prompts/my_prompts", {}, format="json")
         assert response.status_code == status.HTTP_200_OK
         json_response = response.json()
         assert len(json_response["sequences"]) == 1
@@ -95,7 +97,9 @@ class TestPrompt(APIBaseTest):
                 "dismissed": False,
             }
         }
-        response = self.client.patch(f"/api/prompts/my_prompts", local_state, format="json")
+        response = self.client.patch(
+            "/api/prompts/my_prompts", local_state, format="json"
+        )
         assert response.status_code == status.HTTP_200_OK
         json_response = response.json()
         # we now also receive the other sequences, as the first one has been marked as completed
@@ -119,7 +123,9 @@ class TestPrompt(APIBaseTest):
                 "dismissed": False,
             }
         }
-        response = self.client.patch(f"/api/prompts/my_prompts", local_state, format="json")
+        response = self.client.patch(
+            "/api/prompts/my_prompts", local_state, format="json"
+        )
         assert response.status_code == status.HTTP_200_OK
         json_response = response.json()
         assert len(json_response["sequences"]) == 2
@@ -178,9 +184,9 @@ class TestPrompt(APIBaseTest):
 
         # there is no sequence or prompt saved yet
         saved_sequences = list(PromptSequence.objects.all())
-        assert len(saved_sequences) == 0
+        assert not saved_sequences
         saved_prompts = list(Prompt.objects.all())
-        assert len(saved_prompts) == 0
+        assert not saved_prompts
 
         response = self.client.post("/api/prompts/webhook", webhook_data, format="json")
         assert response.status_code == status.HTTP_202_ACCEPTED

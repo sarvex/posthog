@@ -232,7 +232,7 @@ email@example.org,
         self.assertEqual(lines[0].count("distinct_id"), 10)
 
     def test_filter_by_cohort(self):
-        _create_person(team=self.team, distinct_ids=[f"fake"], properties={})
+        _create_person(team=self.team, distinct_ids=["fake"], properties={})
         for i in range(150):
             _create_person(team=self.team, distinct_ids=[f"person_{i}"], properties={"$os": "Chrome"})
 
@@ -252,7 +252,11 @@ email@example.org,
         for i in range(5):
             _create_person(team=self.team, distinct_ids=[f"person_{i}"], properties={"$os": "Chrome"})
 
-        _create_person(team=self.team, distinct_ids=[f"target"], properties={"$os": "Chrome", "$browser": "Safari"})
+        _create_person(
+            team=self.team,
+            distinct_ids=["target"],
+            properties={"$os": "Chrome", "$browser": "Safari"},
+        )
 
         cohort = Cohort.objects.create(
             team=self.team, groups=[{"properties": [{"key": "$os", "value": "Chrome", "type": "person"}]}]
@@ -269,7 +273,11 @@ email@example.org,
         for i in range(5):
             _create_person(team=self.team, distinct_ids=[f"person_{i}"], properties={"$os": "Chrome"})
 
-        _create_person(team=self.team, distinct_ids=[f"target"], properties={"$os": "Chrome", "$browser": "Safari"})
+        _create_person(
+            team=self.team,
+            distinct_ids=["target"],
+            properties={"$os": "Chrome", "$browser": "Safari"},
+        )
         flush_persons_and_events()
 
         cohort = Cohort.objects.create(

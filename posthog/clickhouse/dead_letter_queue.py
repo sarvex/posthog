@@ -53,10 +53,8 @@ SETTINGS index_granularity=512
 # skip up to 1000 messages per block. blocks can be as large as 65505
 # if a block has >1000 broken messages it probably means we're doing something wrong
 # so it should fail and require manual intervention
-KAFKA_DEAD_LETTER_QUEUE_TABLE_SQL = lambda: (
-    DEAD_LETTER_QUEUE_TABLE_BASE_SQL + " SETTINGS kafka_skip_broken_messages=1000"
-).format(
-    table_name="kafka_" + DEAD_LETTER_QUEUE_TABLE,
+KAFKA_DEAD_LETTER_QUEUE_TABLE_SQL = lambda: f"{DEAD_LETTER_QUEUE_TABLE_BASE_SQL} SETTINGS kafka_skip_broken_messages=1000".format(
+    table_name=f"kafka_{DEAD_LETTER_QUEUE_TABLE}",
     cluster=CLICKHOUSE_CLUSTER,
     engine=kafka_engine(topic=KAFKA_DEAD_LETTER_QUEUE),
     extra_fields="",

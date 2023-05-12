@@ -42,7 +42,7 @@ Migration Summary
 
 def generate_insert_into_op(partition_gte: int, partition_lt=None) -> AsyncMigrationOperation:
     lt_expression = f"AND toYYYYMM(timestamp) < {partition_lt}" if partition_lt else ""
-    op = AsyncMigrationOperationSQL(
+    return AsyncMigrationOperationSQL(
         database=AnalyticsDBMS.CLICKHOUSE,
         sql=f"""
         INSERT INTO {TEMPORARY_TABLE_NAME}
@@ -54,7 +54,6 @@ def generate_insert_into_op(partition_gte: int, partition_lt=None) -> AsyncMigra
         rollback=f"TRUNCATE TABLE IF EXISTS {TEMPORARY_TABLE_NAME} ON CLUSTER '{CLICKHOUSE_CLUSTER}'",
         timeout_seconds=2 * 24 * 60 * 60,  # two days
     )
-    return op
 
 
 class Migration(AsyncMigrationDefinition):
@@ -142,8 +141,13 @@ class Migration(AsyncMigrationDefinition):
             ),
         ]
 
-        _operations = create_table_op + old_partition_ops + detach_mv_ops + last_partition_op + post_insert_ops
-        return _operations
+        return (
+            create_table_op
+            + old_partition_ops
+            + detach_mv_ops
+            + last_partition_op
+            + post_insert_ops
+        )
 
     def is_required(self):
         if settings.MULTI_TENANCY:
@@ -163,8 +167,9 @@ class Migration(AsyncMigrationDefinition):
         )
 
     def precheck(self):
-        events_failed_table_exists = sync_execute(f"EXISTS {FAILED_EVENTS_TABLE_NAME}")[0][0]
-        if events_failed_table_exists:
+        if events_failed_table_exists := sync_execute(
+            f"EXISTS {FAILED_EVENTS_TABLE_NAME}"
+        )[0][0]:
             return (
                 False,
                 f"{FAILED_EVENTS_TABLE_NAME} already exists. We use this table as a backup if the migration fails. You can delete or rename it and restart the migration.",

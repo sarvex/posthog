@@ -156,12 +156,11 @@ class WebDataGenerator(DataGenerator):
             )
 
     def make_person(self, index):
-        if index < len(self.demo_data):
-            properties = self.demo_data[index]
-            properties["is_demo"] = True
-            return Person(team=self.team, properties=properties, is_identified=True)
-        else:
+        if index >= len(self.demo_data):
             return super().make_person(index)
+        properties = self.demo_data[index]
+        properties["is_demo"] = True
+        return Person(team=self.team, properties=properties, is_identified=True)
 
     @cached_property
     def demo_data(self) -> List[Dict[str, Any]]:

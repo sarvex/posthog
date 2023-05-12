@@ -106,8 +106,6 @@ class ExportedAssetSerializer(serializers.ModelSerializer):
                 )
             except Insight.DoesNotExist as ex:
                 logger.warn("insight_exports.unknown_insight", exception=ex, insight_id=insight_id)
-                pass
-
         return instance
 
 

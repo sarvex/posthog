@@ -37,9 +37,7 @@ class TestSubscription(APILicensedTest):
             "start_date": "2022-01-01T00:00:00",
             "title": "My Subscription",
             "invite_message": "hey there!",
-        }
-
-        payload.update(kwargs)
+        } | kwargs
         return self.client.post(f"/api/projects/{self.team.id}/subscriptions", payload)
 
     @pytest.mark.skip_on_multitenancy

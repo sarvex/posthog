@@ -118,10 +118,7 @@ class EventDefinitionViewSet(
 
         if ordering and ordering.replace("-", "") in self.ordering_fields:
             order = ordering.replace("-", "")
-            if "-" in ordering:
-                order_direction = "DESC"
-            else:
-                order_direction = "ASC"
+            order_direction = "DESC" if "-" in ordering else "ASC"
         else:
             order = "volume_30_day"
             order_direction = "DESC"
@@ -133,8 +130,9 @@ class EventDefinitionViewSet(
         if EE_AVAILABLE and self.request.user.organization.is_feature_available(AvailableFeature.INGESTION_TAXONOMY):  # type: ignore
             from ee.models.event_definition import EnterpriseEventDefinition
 
-            enterprise_event = EnterpriseEventDefinition.objects.filter(id=id).first()
-            if enterprise_event:
+            if enterprise_event := EnterpriseEventDefinition.objects.filter(
+                id=id
+            ).first():
                 return enterprise_event
 
             non_enterprise_event = EventDefinition.objects.get(id=id)

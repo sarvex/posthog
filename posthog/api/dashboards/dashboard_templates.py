@@ -27,9 +27,7 @@ class OnlyStaffCanEditDashboardTemplate(BasePermission):
     message = "You don't have edit permissions for this dashboard template."
 
     def has_permission(self, request: Request, view) -> bool:
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user.is_staff
+        return True if request.method in SAFE_METHODS else request.user.is_staff
 
 
 class DashboardTemplateSerializer(serializers.ModelSerializer):
@@ -114,8 +112,9 @@ class DashboardTemplateViewSet(StructuredViewSetMixin, ForbidDestroyModel, views
 
             has_new_version = False
             if is_installed and template.get("url"):
-                installed_url = installed_templates.get(template["name"], None)
-                if installed_url:
+                if installed_url := installed_templates.get(
+                    template["name"], None
+                ):
                     has_new_version = template["url"] != installed_url
 
             annotated_templates.append({**template, "installed": is_installed, "has_new_version": has_new_version})

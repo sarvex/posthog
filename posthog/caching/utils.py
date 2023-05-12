@@ -43,8 +43,8 @@ def active_teams() -> Set[int]:
         )
         if not teams_by_recency:
             return set()
-        redis.zadd(RECENTLY_ACCESSED_TEAMS_REDIS_KEY, {team: score for team, score in teams_by_recency})
+        redis.zadd(RECENTLY_ACCESSED_TEAMS_REDIS_KEY, dict(teams_by_recency))
         redis.expire(RECENTLY_ACCESSED_TEAMS_REDIS_KEY, IN_A_DAY)
         all_teams = teams_by_recency
 
-    return set(int(team_id) for team_id, _ in all_teams)
+    return {int(team_id) for team_id, _ in all_teams}

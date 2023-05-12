@@ -24,7 +24,7 @@ def build_billing_token(license: License, organization: Organization):
     license_id = license.key.split("::")[0]
     license_secret = license.key.split("::")[1]
 
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         {
             "exp": datetime.now(tz=timezone.utc) + timedelta(minutes=15),
             "id": license_id,
@@ -35,8 +35,6 @@ def build_billing_token(license: License, organization: Organization):
         license_secret,
         algorithm="HS256",
     )
-
-    return encoded_jwt
 
 
 def handle_billing_service_error(res: requests.Response, valid_codes=(200, 404, 401)) -> None:
@@ -63,12 +61,13 @@ class BillingManager:
             if organization and billing_service_response:
                 self.update_org_details(organization, billing_service_response)
 
-            response: Dict[str, Any] = {"available_features": []}
-
-            response["license"] = {"plan": self.license.plan}
+            response: Dict[str, Any] = {
+                "available_features": [],
+                "license": {"plan": self.license.plan},
+            }
 
             if organization and billing_service_response.get("customer"):
-                response.update(billing_service_response["customer"])
+                response |= billing_service_response["customer"]
 
             if not billing_service_response["customer"].get("products"):
                 products = self.get_default_products(organization)
@@ -115,13 +114,12 @@ class BillingManager:
         handle_billing_service_error(res)
 
     def get_default_products(self, organization: Optional[Organization]):
-        response = {}
         # If we don't have products from the billing service then get the default ones with our local usage calculation
         products = self._get_products(organization)
-        response["products"] = products["standard"]
-        response["products_enterprise"] = products["enterprise"]
-
-        return response
+        return {
+            "products": products["standard"],
+            "products_enterprise": products["enterprise"],
+        }
 
     def update_license_details(self, billing_status: BillingStatus) -> License:
         """
@@ -159,13 +157,11 @@ class BillingManager:
 
         handle_billing_service_error(res)
 
-        data = res.json()
-
-        return data
+        return res.json()
 
     def _get_plans(self, plan_keys: Optional[str]):
         res = requests.get(
-            f'{BILLING_SERVICE_URL}/api/plans{"?keys=" + plan_keys if plan_keys else ""}',
+            f'{BILLING_SERVICE_URL}/api/plans{f"?keys={plan_keys}" if plan_keys else ""}'
         )
 
         handle_billing_service_error(res)
@@ -201,8 +197,7 @@ class BillingManager:
             organization.customer_id = data["customer_id"]
             org_modified = True
 
-        usage_summary = cast(dict, data.get("usage_summary"))
-        if usage_summary:
+        if usage_summary := cast(dict, data.get("usage_summary")):
             usage_info = OrganizationUsageInfo(
                 events=usage_summary["events"],
                 recordings=usage_summary["recordings"],

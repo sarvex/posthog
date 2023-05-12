@@ -20,10 +20,7 @@ def cast_str_to_desired_type(str_value: str, target_type: type) -> Any:
     if target_type == int:
         return int(str_value)
 
-    if target_type == bool:
-        return str_to_bool(str_value)
-
-    return str_value
+    return str_to_bool(str_value) if target_type == bool else str_value
 
 
 class InstanceSettingHelper:
@@ -123,10 +120,10 @@ class InstanceSettingsViewset(
     lookup_field = "key"
 
     def get_queryset(self):
-        output = []
-        for key, setting_config in CONSTANCE_CONFIG.items():
-            output.append(get_instance_setting(key, setting_config))
-        return output
+        return [
+            get_instance_setting(key, setting_config)
+            for key, setting_config in CONSTANCE_CONFIG.items()
+        ]
 
     def get_object(self) -> InstanceSettingHelper:
         # Perform the lookup filtering.

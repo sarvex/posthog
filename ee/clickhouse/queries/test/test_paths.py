@@ -441,91 +441,109 @@ class TestClickhousePaths(ClickhouseTestMixin, APIBaseTest):
 
     def test_path_by_grouping_replacement(self):
 
-        _create_person(distinct_ids=[f"user_1"], team=self.team)
-        _create_person(distinct_ids=[f"user_2"], team=self.team)
-        _create_person(distinct_ids=[f"user_3"], team=self.team)
+        _create_person(distinct_ids=["user_1"], team=self.team)
+        _create_person(distinct_ids=["user_2"], team=self.team)
+        _create_person(distinct_ids=["user_3"], team=self.team)
 
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step3?key=value1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step3?key=value2"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step3?key=value3"},
-            }
-        ),
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step3?key=value1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step3?key=value2"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step3?key=value3"},
+                }
+            ),
+        )
 
         self.team.path_cleaning_filters = [{"alias": "?<param>", "regex": "\\?(.*)"}]
         self.team.save()
@@ -557,7 +575,7 @@ class TestClickhousePaths(ClickhouseTestMixin, APIBaseTest):
             ],
         )
 
-        data.update({"path_replacements": "true"})
+        data["path_replacements"] = "true"
         response = Paths(team=self.team, filter=path_filter).run()
 
         self.assertEqual(
@@ -580,93 +598,111 @@ class TestClickhousePaths(ClickhouseTestMixin, APIBaseTest):
 
     def test_path_by_grouping_replacement_multiple(self):
 
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2/5"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_1",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step2/5?key=value1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2/5"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_2",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step2/5?key=value2"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:00:00",
-                "properties": {"$current_url": "test.com/step1"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:01:00",
-                "properties": {"$current_url": "test.com/step2/5"},
-            }
-        ),
-        _create_event(
-            **{
-                "event": "$pageview",
-                "distinct_id": f"user_3",
-                "team": self.team,
-                "timestamp": "2021-05-01 00:02:00",
-                "properties": {"$current_url": "test.com/step2/5?key=value3"},
-            }
-        ),
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2/5"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_1",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step2/5?key=value1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2/5"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_2",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step2/5?key=value2"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:00:00",
+                    "properties": {"$current_url": "test.com/step1"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:01:00",
+                    "properties": {"$current_url": "test.com/step2/5"},
+                }
+            ),
+        )
+        (
+            _create_event(
+                **{
+                    "event": "$pageview",
+                    "distinct_id": "user_3",
+                    "team": self.team,
+                    "timestamp": "2021-05-01 00:02:00",
+                    "properties": {"$current_url": "test.com/step2/5?key=value3"},
+                }
+            ),
+        )
 
-        _create_person(distinct_ids=[f"user_1"], team=self.team)
+        _create_person(distinct_ids=["user_1"], team=self.team)
 
-        _create_person(distinct_ids=[f"user_2"], team=self.team)
+        _create_person(distinct_ids=["user_2"], team=self.team)
 
-        _create_person(distinct_ids=[f"user_3"], team=self.team)
+        _create_person(distinct_ids=["user_3"], team=self.team)
 
         correct_response = [
             {
@@ -703,21 +739,21 @@ class TestClickhousePaths(ClickhouseTestMixin, APIBaseTest):
         self.team.path_cleaning_filters = [{"alias": "?<param>", "regex": "\\?(.*)"}]
         self.team.save()
 
-        data.update({"local_path_cleaning_filters": [{"alias": "/<id>", "regex": "/\\d+(/|\\?)?"}]})
+        data["local_path_cleaning_filters"] = [
+            {"alias": "/<id>", "regex": "/\\d+(/|\\?)?"}
+        ]
         path_filter = PathFilter(data=data)
         response = Paths(team=self.team, filter=path_filter).run()
         self.assertEqual(response, correct_response)
 
         # overriding team filters
-        data.update(
-            {
-                "path_replacements": False,
-                "local_path_cleaning_filters": [
-                    {"alias": "?<param>", "regex": "\\?(.*)"},
-                    {"alias": "/<id>", "regex": "/\\d+(/|\\?)?"},
-                ],
-            }
-        )
+        data |= {
+            "path_replacements": False,
+            "local_path_cleaning_filters": [
+                {"alias": "?<param>", "regex": "\\?(.*)"},
+                {"alias": "/<id>", "regex": "/\\d+(/|\\?)?"},
+            ],
+        }
         path_filter = PathFilter(data=data)
         response = Paths(team=self.team, filter=path_filter).run()
         self.assertEqual(response, correct_response)

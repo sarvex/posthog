@@ -34,8 +34,7 @@ def hostname_in_allowed_url_list(allowed_url_list: Optional[List[str]], hostname
     permitted_domains = []
     if allowed_url_list:
         for url in allowed_url_list:
-            host = parse_domain(url)
-            if host:
+            if host := parse_domain(url):
                 permitted_domains.append(host)
 
     for permitted_domain in permitted_domains:
@@ -65,10 +64,9 @@ def get_decide(request: HttpRequest):
         "toolbarParams": {},
         "isAuthenticated": False,
         "supportedCompression": ["gzip", "gzip-js", "lz64"],
+        "featureFlags": [],
+        "sessionRecording": False,
     }
-
-    response["featureFlags"] = []
-    response["sessionRecording"] = False
 
     if request.method == "POST":
         try:
@@ -83,8 +81,11 @@ def get_decide(request: HttpRequest):
             # then it is likely that no clients are running posthog-js 1.19.0
             # and this defaulting could be removed
             statsd.incr(
-                f"posthog_cloud_decide_defaulted_api_version_on_value_error",
-                tags={"endpoint": "decide", "api_version_string": api_version_string},
+                "posthog_cloud_decide_defaulted_api_version_on_value_error",
+                tags={
+                    "endpoint": "decide",
+                    "api_version_string": api_version_string,
+                },
             )
             api_version = 2
         except RequestParsingError as error:
@@ -169,12 +170,12 @@ def get_decide(request: HttpRequest):
                 # default v1
                 response["featureFlags"] = list(active_flags.keys())
 
-            response["capturePerformance"] = True if team.capture_performance_opt_in else False
+            response["capturePerformance"] = bool(team.capture_performance_opt_in)
 
             if team.session_recording_opt_in and (
                 on_permitted_recording_domain(team, request) or not team.recording_domains
             ):
-                capture_console_logs = True if team.capture_console_log_opt_in else False
+                capture_console_logs = bool(team.capture_console_log_opt_in)
                 response["sessionRecording"] = {
                     "endpoint": "/s/",
                     "consoleLogRecordingEnabled": capture_console_logs,
@@ -190,9 +191,9 @@ def get_decide(request: HttpRequest):
 
             response["siteApps"] = site_apps
 
-            # NOTE: Whenever you add something to decide response, update this test:
-            # `test_decide_doesnt_error_out_when_database_is_down`
-            # which ensures that decide doesn't error out when the database is down
+                    # NOTE: Whenever you add something to decide response, update this test:
+                    # `test_decide_doesnt_error_out_when_database_is_down`
+                    # which ensures that decide doesn't error out when the database is down
 
-    statsd.incr(f"posthog_cloud_raw_endpoint_success", tags={"endpoint": "decide"})
+    statsd.incr("posthog_cloud_raw_endpoint_success", tags={"endpoint": "decide"})
     return cors_response(request, JsonResponse(response))
