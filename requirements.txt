@@ -238,7 +238,7 @@ phonenumberslite==8.13.6
     # via -r requirements.in
 pickleshare==0.7.5
     # via -r requirements.in
-pillow==9.2.0
+pillow==9.3.0
     # via -r requirements.in
 posthoganalytics==3.0.1
     # via -r requirements.in
