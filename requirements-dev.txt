@@ -31,11 +31,6 @@ certifi==2019.11.28
     # via
     #   -c requirements.txt
     #   requests
-    #   urllib3
-cffi==1.14.5
-    # via
-    #   -c requirements.txt
-    #   cryptography
 chardet==5.1.0
     # via
     #   -c requirements.txt
@@ -58,14 +53,9 @@ coreschema==0.0.4
     # via coreapi
 coverage==5.5
     # via pytest-cov
-cryptography==37.0.2
-    # via
-    #   -c requirements.txt
-    #   pyopenssl
-    #   urllib3
 datamodel-code-generator==0.16.1
     # via -r requirements-dev.in
-django==3.2.18
+django==3.2.24
     # via
     #   -c requirements.txt
     #   django-stubs
@@ -103,7 +93,6 @@ idna==2.8
     #   -c requirements.txt
     #   email-validator
     #   requests
-    #   urllib3
 importlib-resources==5.10.2
     # via openapi-spec-validator
 inflect==5.6.2
@@ -173,18 +162,11 @@ prance==0.22.2.22.0
     #   datamodel-code-generator
 py==1.10.0
     # via pytest
-pycparser==2.20
-    # via
-    #   -c requirements.txt
-    #   cffi
 pydantic[email]==1.10.4
     # via
     #   -c requirements.txt
     #   datamodel-code-generator
-pyopenssl==22.0.0
-    # via
-    #   -c requirements.txt
-    #   urllib3
+    #   pydantic
 pyproject-hooks==1.0.0
     # via build
 pyrsistent==0.18.1
@@ -193,10 +175,6 @@ pyrsistent==0.18.1
     #   jsonschema
 pysnooper==1.1.1
     # via datamodel-code-generator
-pysocks==1.7.1
-    # via
-    #   -c requirements.txt
-    #   urllib3
 pytest==6.2.5
     # via
     #   -r requirements-dev.in
@@ -312,14 +290,10 @@ uritemplate==4.1.1
     # via
     #   -c requirements.txt
     #   coreapi
-urllib3[secure,socks]==1.26.13
+urllib3==1.26.13
     # via
     #   -c requirements.txt
     #   requests
-urllib3-secure-extra==0.1.0
-    # via
-    #   -c requirements.txt
-    #   urllib3
 watchdog==2.1.8
     # via pytest-watch
 wheel==0.38.1
