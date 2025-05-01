@@ -1,0 +1,5 @@
+{
+  "extends": ["github>sarvex/renovate-configs:rust"]
+  "extends": ["github>sarvex/renovate-configs:python"]
+  "extends": ["github>sarvex/renovate-configs:js-app"]
+}
